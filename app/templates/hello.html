@@ -1,0 +1,26 @@
+{% extends "html_header.html" %}
+{% block subblock %}
+<div class="container-fuild">
+		<div class="row align-items-center justify-content-lg-center" style="height: 800px; vertical-align: middle;">
+			<div class="col-4">
+				<h3 class="display-3 text-center" style="padding: 20px"> <b>LAWZY</b></h3>
+				<form action="/aggregator/uploader" method="POST" enctype="multipart/form-data">
+					<div class="input-group ">
+						<div class="custom-file">
+							<input type="file" 
+								   name="file" 
+								   class="custom-file-input" 
+								   id="inputMainFile" 
+								   aria-describedby="inputMainFile"/>
+							<label class="custom-file-label" for="inputMainFile">Choose file</label>
+						</div>
+						<div class="input-group-append">
+							<input class="btn btn-primary" type="submit" name="upload" id="inputMainFile"/>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>	
+</div>
+{% endblock %}
+

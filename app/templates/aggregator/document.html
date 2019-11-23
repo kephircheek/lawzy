@@ -1,0 +1,64 @@
+{% extends "aggregator/base.html" %}
+{% block aggregator %}
+
+<div class="container-fluid">
+	<div class="row">
+		<h3>&nbsp;</h3>
+	</div>
+	<div class="row">
+		<div class="col-lg-8">
+			{{ content|safe}}
+		</div>
+		<div class="col-lg-4">
+
+			<form action="/aggregator/reduce" method="GET" enctype="multipart/form-data">
+				<div class="custom-control custom-switch">
+					<input type="checkbox" {{checked}} class="custom-control-input" id="switchReduce" onclick="this.form.submit()"/>
+					<label class="custom-control-label" for="switchReduce">Reduce</label>
+				</div>
+			</form>
+			
+			<h3>&nbsp;</h3>
+
+			<form action="/aggregator/keywords" method="POST" enctype="multipart/form-data">
+				<div class="input-group">
+					<div class="input-group-prepend">
+						<span class="input-group-text" id="inputTag">@</span>
+					</div>
+					<input type="text" 
+						   name="text"
+						   class="form-control" 
+						   placeholder="Tag" 
+						   aria-describedby="inputTag"
+						   id="inputTag"/>
+					<div class="input-group-append">
+						<input class="btn btn-primary" 
+							   type="submit" 
+							   value="Add" 
+		  					   id="inputTag">
+
+					</div>
+				</div>
+			</form>
+
+			<h3>&nbsp;</h3>
+
+			<ul class="list-group">
+				{% for kw in keywords %}
+				<li class="list-group-item">
+					<form action="/aggregator/keywords/{{kw}}" method="GET" 
+						  enctype="multipart/form-data" class="form-inline">
+						<button type="submit" class="close">
+							{{ kw }} &times;
+						</button> 
+					</form>
+				</li>
+				{% endfor %}
+			</ul>
+
+
+		</div>
+	</div>
+</div>
+{% endblock %}
+
