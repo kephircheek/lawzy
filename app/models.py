@@ -61,9 +61,14 @@ class Data(Base):
 
     @property
     def labels(self):
+        if len(tuple(self.get().items())[0][1]) < 2:
+            #print(tuple(self.get().items())[0][1])
+            return None
+
         return {id: item[1] for id, item in self.get().items()}
 
     @property
     def dublicates(self):
         return {id: item[2] for id, item in self.get().items()}
+
 

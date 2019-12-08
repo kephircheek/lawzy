@@ -14,13 +14,14 @@ def flag(pattern):
 
 def group(data):
 
+    data = {id:item if len(item) > 10 else '' for id, item in data.items()}
     def tokenizer(sentence):
         words = re.split(r"\W", sentence)
         return [word for word in words if not word.isnumeric() and len(word)>2]
 
     ids, sentences = zip(*data.items())
     vectorizer = tfv(tokenizer=tokenizer, max_df=0.8)
-    db = DBSCAN(eps=0.4, min_samples=2, metric="cosine")
+    db = DBSCAN(eps=0.2, min_samples=2, metric="cosine")
 
     X = vectorizer.fit_transform(sentences)
     db.fit(X)
@@ -85,7 +86,7 @@ def highlight(entries, style, colors=None):
                                     {'style': 'background-color: #FF0000'},
                                     tag,
                                     span])
-            style['>' + id].sort()
+            style['>' + id].sort(key=lambda x: x[3][0] if len(x) > 2 else x)
 
     return style
 

@@ -1,6 +1,8 @@
 # Import flask and template operators
 from flask import Flask, render_template, redirect, url_for, session
 import os
+import shutil
+
 
 # Define the WSGI application object
 app = Flask(__name__)
@@ -22,7 +24,8 @@ def hello():
 
 @app.route('/new', methods=['GET', 'POST'])
 def new():
-    session.pop('token')
+    token = session.pop('token')
+    shutil.rmtree(f'app/storage/{token}')
     return redirect(url_for('hello'))
 
 # Import a module / component using its blueprint handler variable (mod_auth)

@@ -5,6 +5,7 @@ import json
 from app.models import Struct, Style, KeywordEntries, Data
 import core
 import os
+import collections
 
 INDENT = 2
 # Define the blueprint: 'auth', set its url prefix: app.url/auth
@@ -64,8 +65,12 @@ def document():
     struct = Struct(token).get()
     style = Style(token).get()
     data = Data(token).sentences
+    if session['toggle:reduce'] == True:
+        labels = Data(token).labels
+    else:
+        labels = None
     keywords = KeywordEntries(token).get().keys()
-    content = core.compiler(struct, style, data)
+    content = core.compiler(struct, style, data, labels=labels)
     return render_template("aggregator/document.html",
                            content=content,
                            keywords=keywords,
@@ -83,7 +88,7 @@ def reduce():
         session['reduced'] = True
 
     dubs = {id for id, bool in Data(token).dublicates.items() if bool == True}
-    print(dubs)
+
     if session['toggle:reduce']:
         style = core.unmute(dubs,
                             Style(token).get())
@@ -99,11 +104,26 @@ def reduce():
 
     return redirect(url_for('aggregator.document'))
 
+@aggregator.route('/rating', methods = ['GET'])
+def rating():
+
+    token = session['token']
+
+    if not session['reduced']:
+        labels = core.group(Data(token).sentences)
+        Data(token).add(labels)
+        dubs = core.dublicates(labels)
+        Data(token).add(dubs)
+        session['reduced'] = True
+
+    label_counter = collections.Counter([label for id, label in Data(token).labels.items()])
+    return render_template('outline/rating.html', content=label_counter.most_common())
+
 @aggregator.route('/keywords', methods = ['POST'])
 def add_keywords():
     token = session['token']
 
-    new_keywords = {item.strip() for item in request.form['text'].split(',')}
+    new_keywords = {item.strip().casefold() for item in request.form['text'].split(',')}
 
 
     keywords = KeywordEntries(token).get()

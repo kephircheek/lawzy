@@ -88,13 +88,18 @@ def wrapping(styles, data):
     else:
         return data
 
-def compiler(struct, style, data, out_type='html'):
+def compiler(struct, style, data, out_type='html', labels=None):
+    print('LABELS:', labels)
 
     def html_compiler(node):
         '''
         '''
         if isinstance(node, str):
-            return correcting(style[node], data[node[1:]])
+            appendix = ''
+            if labels and labels[node[1:]] >= 0:
+                appendix = f''' <sup class="badge badge-secondary" style="font-size: 8px;">{labels[node[1:]]}</sup>'''
+
+            return correcting(style[node], data[node[1:]]) + appendix
 
         id, next_nodes = node
         return wrapping(style[id], '\n'.join(map(html_compiler, next_nodes)))
