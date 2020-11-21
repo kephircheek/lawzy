@@ -21,7 +21,7 @@ def group(data):
 
     ids, sentences = zip(*data.items())
     vectorizer = tfv(tokenizer=tokenizer, max_df=0.8)
-    db = DBSCAN(eps=0.2, min_samples=2, metric="cosine")
+    db = DBSCAN(eps=0.1, min_samples=2, metric="cosine")
 
     X = vectorizer.fit_transform(sentences)
     db.fit(X)

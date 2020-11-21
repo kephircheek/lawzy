@@ -7,11 +7,11 @@
 				<form action="/aggregator/uploader" method="POST" enctype="multipart/form-data">
 					<div class="input-group ">
 						<div class="custom-file">
-							<input type="file" 
-								   name="file" 
-								   accept="text/plain"
-								   class="custom-file-input" 
-								   id="inputMainFile" 
+							<input type="file"
+								   name="file"
+								   accept="text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+								   class="custom-file-input"
+								   id="inputMainFile"
 								   aria-describedby="inputMainFile"/>
 							<label class="custom-file-label" for="inputMainFile">Choose file</label>
 						</div>
@@ -21,7 +21,7 @@
 					</div>
 				</form>
 			</div>
-		</div>	
+		</div>
 </div>
 {% endblock %}
 

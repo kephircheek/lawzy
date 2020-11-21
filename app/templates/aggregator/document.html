@@ -3,7 +3,7 @@
 
 <div class="container-sm" style="height: 100%; padding-left: 10px; padding-right: 10px; padding-top: 20px">
 	<div class="row" style="height: 90%;">
-		<div class="col-sm-4 order-last" style="height: 100%"> 
+		<div class="col-sm-4 order-last" style="height: 100%">
 			<form style="padding: 5px; display: inline-block" action="/aggregator/reduce" method="GET" enctype="multipart/form-data">
 				<div class="custom-control custom-switch">
 					<input type="checkbox" {{checked}} class="custom-control-input" id="switchReduce" onclick="this.form.submit()"/>
@@ -12,24 +12,33 @@
 					</label>
 				</div>
 			</form>
-			
-			<!-- RATING -->
+
+			<!-- RATING
 			<a  href="/aggregator/rating" class="badge badge-primary" style="font-size: 12pt;" target="_blank" role="button">Rating</a>
+			-->
+
+			<a href="/aggregator/download"
+         class="badge badge-primary"
+         style="font-size: 12pt;"
+         target="_blank"
+         role="button">
+         Download{{ profit }}
+      </a>
 
 			<form style="padding: 5px" action="/aggregator/keywords" method="POST" enctype="multipart/form-data">
 				<div class="input-group input-group-sm">
 					<div class="input-group-prepend">
 						<span class="input-group-text" id="inputTag">@</span>
 					</div>
-					<input type="text" 
+					<input type="text"
 						   name="text"
-						   class="form-control" 
-						   placeholder="keyword" 
+						   class="form-control"
+						   placeholder="keyword"
 						   aria-describedby="inputTag"
 						   id="inputTag"/>
 					<div class="input-group-append">
-						<input class="btn btn-primary" type="submit" 
-							   value="Add" 
+						<input class="btn btn-primary" type="submit"
+							   value="Add"
 		  					   id="inputTag">
 
 					</div>
@@ -38,7 +47,7 @@
 
 			<div style="padding: 5px">
 				{% for kw in keywords %}
-					<form action="/aggregator/keywords/{{kw}}" method="GET" 
+					<form action="/aggregator/keywords/{{kw}}" method="GET"
 						  enctype="multipart/form-data" style="display: inline-block">
 						<button type="submit" class="badge badge-danger text-white">
 							{{ kw }} <span style="font-size: 12px"> &times; </span>
@@ -54,7 +63,7 @@
 		</div>
 	</div>
 	<div class="row" style="height: 3%; background-color: #666666">
-		<div class="col text-right text-white"> 
+		<div class="col text-right text-white">
 			#
 		</div>
 	</div>

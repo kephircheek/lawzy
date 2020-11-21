@@ -21,7 +21,7 @@ def txt_extractor(content, split_sentence_pattern):
     data = dict()
     struct = ['origin', []]
 
-    paragraphs = re.split(r'\n[ \n](?=[^\n])', content)
+    paragraphs = re.split(r'\n[ \n]*(?=[^ \n])', content)
     for par in paragraphs:
         par_id = next(id_generator)
         struct[-1].append([par_id, []])
@@ -88,22 +88,70 @@ def wrapping(styles, data):
     else:
         return data
 
-def compiler(struct, style, data, out_type='html', labels=None):
-    print('LABELS:', labels)
+def compiler(struct, style, data,
+             out_type='html',
+             labels=None,
+             mute=None,
+             path=None,
+             limit=None):
+    # print('LABELS:', labels)
+    checked_labels = set()
 
     def html_compiler(node):
         '''
         '''
+        mute_style = []
         if isinstance(node, str):
             appendix = ''
-            if labels and labels[node[1:]] >= 0:
-                appendix = f''' <sup class="badge badge-secondary" style="font-size: 8px;">{labels[node[1:]]}</sup>'''
+            if mute and labels:
+                label = labels[node[1:]]
+                if label >= 0:
+                    appendix = (
+                        '<sup class="badge badge-secondary" style="font-size:8px;">'
+                        + str(labels[node[1:]])
+                        + '</sup>'
+                    )
+                    if label in checked_labels:
+                        mute_style.append(['div', {'style': 'color: #AAAAAA'}])
 
-            return correcting(style[node], data[node[1:]]) + appendix
+                    else:
+                        checked_labels.add(label)
+
+            return wrapping(
+                mute_style,
+                correcting(style[node], data[node[1:]]) + appendix
+            )
 
         id, next_nodes = node
         return wrapping(style[id], '\n'.join(map(html_compiler, next_nodes)))
 
-    return html_compiler(struct)
+    if out_type == 'html':
+        return html_compiler(struct)
 
+    def compile_txt(node):
+        if isinstance(node, str):
+            sentence = data[node[1:]]
+            len_sentence = len(sentence)
+            if len_sentence > 80:
+                label = '!'
+            else:
+                label = None
+            if labels and labels[node[1:]] >= 0:
+                label = str(labels[node[1:]])
 
+                if label in checked_labels:
+                    if len(sentence) > limit:
+                        sentence = sentence[:limit] + '  <<<<<<<<'
+                    else:
+                        return None
+                else:
+                    checked_labels.add(label)
+
+            prefix = '[%s]' % label if label else ""
+            return prefix + sentence
+
+        id, next_nodes = node
+        return '\n'.join(s for s in map(compile_txt, next_nodes) if s)
+
+    if out_type == 'txt':
+        return compile_txt(struct)
