@@ -120,7 +120,7 @@ def reduce():
 
     return redirect(url_for('aggregator.document'))
 
-@aggregator.route('/rating', methods = ['GET'])
+@aggregator.route('/rating', methods=['GET'])
 def rating():
 
     token = session['token']

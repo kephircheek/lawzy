@@ -1,6 +1,8 @@
 import re
 import operator
 import json
+from collections import Counter
+
 
 def html_extractor(doc):
     pass
@@ -95,7 +97,9 @@ def compiler(struct, style, data,
              path=None,
              limit=None):
     # print('LABELS:', labels)
-    checked_labels = set()
+    checked_labels = dict()
+    if labels:
+        labels_counter = Counter(labels.values())
 
     def html_compiler(node):
         '''
@@ -105,17 +109,28 @@ def compiler(struct, style, data,
             appendix = ''
             if mute and labels:
                 label = labels[node[1:]]
+                sentence_id = 'sentence:%s' % label
                 if label >= 0:
+                    n_entrie = checked_labels.get(label, 0)
+                    checked_labels[label] = n_entrie + 1
                     appendix = (
                         '<sup class="badge badge-secondary" style="font-size:8px;">'
                         + str(labels[node[1:]])
+                        + ('(%s:%s)' % (str(n_entrie + 1),
+                                        str(labels_counter[label])))
                         + '</sup>'
                     )
-                    if label in checked_labels:
-                        mute_style.append(['div', {'style': 'color: #AAAAAA'}])
+                    if n_entrie > 20:
+                        return wrapping([['a', {'href': '#%s' % sentence_id}]],
+                                        '[...]') + appendix
+
+                    elif n_entrie > 0:
+                        text = data[node[1:]][:limit] + '...'
+                        return wrapping([['a', {'href': '#%s' % sentence_id}]],
+                                        text) + appendix
 
                     else:
-                        checked_labels.add(label)
+                        mute_style.append(['div', {'id': sentence_id}])
 
             return wrapping(
                 mute_style,
@@ -130,28 +145,49 @@ def compiler(struct, style, data,
 
     def compile_txt(node):
         if isinstance(node, str):
+            end = '\n'
+            prefix = ''
             sentence = data[node[1:]]
             len_sentence = len(sentence)
-            if len_sentence > 80:
-                label = '!'
-            else:
-                label = None
-            if labels and labels[node[1:]] >= 0:
-                label = str(labels[node[1:]])
 
-                if label in checked_labels:
+            if labels and labels[node[1:]] >= 0:
+
+                label = labels[node[1:]]
+                n_entrie = checked_labels.get(label, 0)
+                checked_labels[label] = n_entrie + 1
+                n_labels = labels_counter[label]
+
+                if n_entrie > 20:
+                    sentence = ''
+                    end = ''
+
+                elif n_entrie > 0:
                     if len(sentence) > limit:
                         sentence = sentence[:limit] + '  <<<<<<<<'
-                    else:
-                        return None
-                else:
-                    checked_labels.add(label)
 
-            prefix = '[%s]' % label if label else ""
-            return prefix + sentence
+                    else:
+                        sentence = ''
+                        end =''
+
+                else:
+                    pass
+
+                prefix = ('[%s | %s:%s]' % (label, n_entrie + 1, n_labels))
+
+            elif len_sentence > 80:
+                prefix = '[!]'
+
+            elif len_sentence < 2:
+                sentence = ''
+                end = ''
+
+            else:
+                prefix = ''
+
+            return prefix + sentence + end
 
         id, next_nodes = node
-        return '\n'.join(s for s in map(compile_txt, next_nodes) if s)
+        return ''.join(s for s in map(compile_txt, next_nodes) if s)
 
     if out_type == 'txt':
         return compile_txt(struct)

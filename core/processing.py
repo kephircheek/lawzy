@@ -1,7 +1,10 @@
 import re
+from collections import Counter, OrderedDict
+import itertools
 
 from sklearn.feature_extraction.text import TfidfVectorizer as tfv
-from sklearn.cluster import DBSCAN
+from sklearn.metrics.pairwise import cosine_distances
+from sklearn.cluster import DBSCAN, OPTICS
 
 def split(entries, data):
     id_generator = iter(map(str, range(100_000)))
@@ -12,20 +15,49 @@ def split(entries, data):
 def flag(pattern):
     pass
 
-def group(data):
 
-    data = {id:item if len(item) > 10 else '' for id, item in data.items()}
+class OrderedCounter(Counter, OrderedDict):
+    'Counter that remembers the order elements are first encountered'
+
+
+def group(data, min_samples=3, eps=0.07):
+
+    # data = {id:item if len(item) > 10 else '' for id, item in data.items()}
     def tokenizer(sentence):
         words = re.split(r"\W", sentence)
-        return [word for word in words if not word.isnumeric() and len(word)>2]
+        return [word for word in words
+                if not word.isnumeric() and len(word) > 2]
 
-    ids, sentences = zip(*data.items())
-    vectorizer = tfv(tokenizer=tokenizer, max_df=0.8)
-    db = DBSCAN(eps=0.1, min_samples=2, metric="cosine")
+    vectorizer = tfv(tokenizer=tokenizer, max_df=0.6, max_features=5000)
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples, metric="precomputed")
+    train_sentences = OrderedCounter(data.values())
+    vec_data = vectorizer.fit_transform(train_sentences)
 
-    X = vectorizer.fit_transform(sentences)
-    db.fit(X)
-    return {id: int(label) for id, label in zip(ids, db.labels_)}
+    distance_matrix = cosine_distances(vec_data)
+    print('DEBUG: vectorized and shape: %s' % str(vec_data.shape))
+    dbscan_labels = dbscan.fit_predict(distance_matrix)
+    print('DEBUG: dbscan clustering is done!')
+
+    sentence_labels = {}
+    dbscan2squash = {}
+    label_gen = itertools.count()
+    for sentence, n_samples, dbscan_label in zip(train_sentences,
+                                                 train_sentences.values(),
+                                                 dbscan_labels):
+        if dbscan_label > 0:
+            if dbscan_label not in dbscan2squash:
+                dbscan2squash[dbscan_label] = next(label_gen)
+            sentence_labels[sentence] = dbscan2squash[dbscan_label]
+
+        elif len(sentence) > 10 and n_samples >= min_samples:
+            sentence_labels[sentence] = next(label_gen)
+
+        else:
+            pass
+
+    print('DEBUG: labels collection is done!')
+    return {id: sentence_labels.get(sentence, -1)
+            for id, sentence in data.items()}
 
 def dublicates(labels):
     added = set()
