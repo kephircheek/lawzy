@@ -102,7 +102,8 @@ def document():
                            content=content,
                            keywords=keywords,
                            checked=checked,
-                           profit=profit)
+                           profit=profit,
+                           reduced=session['reduced'])
 
 @aggregator.route('/reduce', methods = ['GET'])
 def reduce():
@@ -124,16 +125,35 @@ def reduce():
 def rating():
 
     token = session['token']
+    path = os.path.abspath(f'app/storage/{token}/rating.txt')
 
-    if not session['reduced']:
-        labels = core.group(Data(token).sentences)
-        Data(token).add(labels)
-        dubs = core.dublicates(labels)
-        Data(token).add(dubs)
-        session['reduced'] = True
+    if not os.path.isfile(path):
+        data = Data(token)
+        label_counter = collections.Counter(data.labels.values())
+        label_counter.pop(-1)
+        sentences_by_label = collections.defaultdict(
+            lambda: collections.defaultdict(lambda: 0)
+        )
+        for item in data.get().values():
+            sentence = item[0]
+            label = item[1]
+            sentences_by_label[label][sentence] += 1
 
-    label_counter = collections.Counter([label for id, label in Data(token).labels.items()])
-    return render_template('outline/rating.html', content=label_counter.most_common())
+        doc = docx.Document()
+        for label, freq in label_counter.most_common():
+            doc.add_paragraph('Номер группы: %s     Количество предложений: %s' %
+                              (label, freq))
+            for sentence, freq in sentences_by_label[label].items():
+                doc.add_paragraph('(%s) %s' % (freq, sentence))
+            doc.add_paragraph('-' * 80)
+
+        doc.save(path)
+
+    return send_file(
+        path,
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        attachment_filename='rating'
+    )
 
 
 @aggregator.route('/download', methods=['GET'])

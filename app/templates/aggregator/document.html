@@ -25,6 +25,16 @@
          Download{{ profit }}
       </a>
 
+      {% if reduced %}
+        <a href="/aggregator/rating"
+           class="badge badge-success"
+           style="font-size: 12pt;"
+           target="_blank"
+           role="button">
+           Rating
+        </a>
+      {% endif %}
+
 			<form style="padding: 5px" action="/aggregator/keywords" method="POST" enctype="multipart/form-data">
 				<div class="input-group input-group-sm">
 					<div class="input-group-prepend">
