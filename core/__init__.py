@@ -1,2 +1,10 @@
-from core.converters import txt_extractor, compiler
-from core.processing import search, highlight, mutelight, mute, unmute, group, dublicates
+from core.converters import compiler, txt_extractor
+from core.processing import (
+    dublicates,
+    group,
+    highlight,
+    mute,
+    mutelight,
+    search,
+    unmute,
+)

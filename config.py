@@ -3,7 +3,8 @@ DEBUG = False
 
 # Define the application directory
 import os
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-UPLOAD_FOLDER = f'{BASE_DIR}/app/storage/'
-SECRET_KEY = 'secret-key'
+UPLOAD_FOLDER = f"{BASE_DIR}/app/storage/"
+SECRET_KEY = "secret-key"
