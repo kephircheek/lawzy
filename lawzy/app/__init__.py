@@ -4,11 +4,13 @@ import shutil
 
 from flask import Flask, redirect, render_template, session, url_for
 
+from lawzy.config import UPLOAD_FOLDER
+
 # Define the WSGI application object
 app = Flask(__name__)
 
 # Configurations
-app.config.from_object("config")
+app.config.from_object("lawzy.config")
 
 
 # Sample HTTP error handling
@@ -19,7 +21,7 @@ def not_found(error):
 
 @app.route("/", methods=["GET", "POST"])
 def hello():
-    if "token" in session and os.path.exists(f'app/storage/{session["token"]}'):
+    if "token" in session and os.path.exists(f'{UPLOAD_FOLDER}/{session["token"]}'):
         return redirect(url_for("aggregator.document"))
     return render_template("hello.html")
 
@@ -27,12 +29,12 @@ def hello():
 @app.route("/new", methods=["GET", "POST"])
 def new():
     token = session.pop("token")
-    shutil.rmtree(f"app/storage/{token}")
+    shutil.rmtree(f"{UPLOAD_FOLDER}/{token}")
     return redirect(url_for("hello"))
 
 
 # Import a module / component using its blueprint handler variable (mod_auth)
-from app.aggregator.routes import aggregator
+from lawzy.app.aggregator.routes import aggregator
 
 # Register blueprint(s)
 app.register_blueprint(aggregator)

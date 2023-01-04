@@ -1,5 +1,5 @@
-from core.converters import compiler, txt_extractor
-from core.processing import (
+from .converters import compiler, txt_extractor
+from .processing import (
     dublicates,
     group,
     highlight,

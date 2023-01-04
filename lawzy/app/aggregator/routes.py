@@ -15,8 +15,9 @@ from flask import (
     url_for,
 )
 
-import core
-from app.models import Data, KeywordEntries, Struct, Style
+from lawzy import core
+from lawzy.app.models import Data, KeywordEntries, Struct, Style
+from lawzy.config import UPLOAD_FOLDER
 
 INDENT = 2
 # Define the blueprint: 'auth', set its url prefix: app.url/auth
@@ -31,11 +32,11 @@ def upload_file():
         session["token"] = str(token)
         session["toggle:reduce"] = False
         session["reduced"] = False
-        os.makedirs(f"app/storage/{token}")
+        os.makedirs(f"{UPLOAD_FOLDER}/{token}")
 
         f = request.files["file"]
         filename, extention = os.path.splitext(os.path.basename(f.filename))
-        f.save(f"app/storage/{token}/source{extention}")
+        f.save(f"{UPLOAD_FOLDER}/{token}/source{extention}")
 
         config = {
             "FILENAME": filename,
@@ -46,10 +47,10 @@ def upload_file():
             "CASE_NUMBER_PATTERN": r"(?<=по делу\s)[^\n]+",
         }
 
-        with open(f"app/storage/{token}/config.json", "w") as f:
+        with open(f"{UPLOAD_FOLDER}/{token}/config.json", "w") as f:
             json.dump(config, f, indent=INDENT)
 
-        with open(f'app/storage/{token}/source{config["EXTENTION"]}', "rb") as f:
+        with open(f'{UPLOAD_FOLDER}/{token}/source{config["EXTENTION"]}', "rb") as f:
             if config["EXTENTION"] == ".docx":
                 content = "\n".join(par.text for par in docx.Document(f).paragraphs)
             else:
@@ -126,7 +127,7 @@ def reduce():
 def rating():
 
     token = session["token"]
-    path = os.path.abspath(f"app/storage/{token}/rating.txt")
+    path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/rating.txt")
 
     if not os.path.isfile(path):
         data = Data(token)
@@ -154,7 +155,7 @@ def rating():
     return send_file(
         path,
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        attachment_filename="rating",
+        download_name="rating.docx",
     )
 
 
@@ -178,19 +179,19 @@ def download():
         limit=40,
     )
 
-    path = os.path.abspath(f"app/storage/{token}/result.docx")
+    path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/result.docx")
     doc = docx.Document()
     for par in content.split("\n"):
         doc.add_paragraph(par)
     doc.save(path)
 
-    with open(f"app/storage/{token}/config.json") as f:
+    with open(f"{UPLOAD_FOLDER}/{token}/config.json") as f:
         config = json.load(f)
-    filename = config["FILENAME"] + config["EXTENTION"]
+    filename = config["FILENAME"]
     return send_file(
         path,
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        attachment_filename=filename,
+        download_name=f"{filename}.docx",
     )
 
 

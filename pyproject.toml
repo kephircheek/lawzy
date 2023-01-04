@@ -1,0 +1,37 @@
+[project]
+name = "lawzy"
+description =  ""
+version = "1.0.0"
+authors = [
+    { name = "Ilia Lazarev", email = "the.ilia.lazarev@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "flask",
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "python-docx",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/kephircheek/lawzy"
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "isort[colors]",
+    "black",
+    "pydocstyle",
+    "toml",
+]
+prod = [
+    "gunicorn",
+]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 90

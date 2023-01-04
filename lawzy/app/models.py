@@ -1,11 +1,13 @@
 import json
 
+from lawzy.config import UPLOAD_FOLDER
+
 
 class Base:
     def __init__(self, token, name):
         self.token = token
         self.name = name
-        self.path = f"app/storage/{token}/{name}.json"
+        self.path = f"{UPLOAD_FOLDER}/{token}/{name}.json"
         self.indent = 2
 
     def post(self, content=None):
