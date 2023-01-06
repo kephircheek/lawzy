@@ -6,7 +6,7 @@ authors = [
     { name = "Ilia Lazarev", email = "the.ilia.lazarev@gmail.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dependencies = [
     "Flask==2.2.2",
     "numpy==1.24.1",
@@ -30,6 +30,9 @@ dev = [
 prod = [
     "uWSGI==2.0.21",
 ]
+
+[tool.setuptools]
+py-modules = []
 
 [tool.isort]
 profile = "black"
