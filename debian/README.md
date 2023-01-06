@@ -41,7 +41,7 @@
 ## Deploy
 1. Install dependencies
   ```shell
-  $ sudo apt install -y git python3-pip python3-venv python-dev build-essential 
+  $ sudo apt install -y nginx git python3-pip python3-venv python-dev build-essential
   ```
 
 2. Create user `lawzy` and login
@@ -67,4 +67,22 @@
   $ sudo cp -f /home/lawzy/lawzy/debian/lawzy.service /etc/systemd/system/
   $ sudo systemctl start lawzy
   $ sudo systemctl enable lawzy
+  ```
+
+6. Serve uWSGI socket with nginx.
+  ```shell
+  $ sudo apt install nginx
+  $ sudo tee /etc/nginx/sites-available/lawzy << EOF
+  server {
+      listen 80;
+      server_name www.lawzy.ru;
+
+      location / {
+          include uwsgi_params;
+          uwsgi_pass unix:/home/lawzy/lawzy/lawzy.sock;
+      }
+  }
+  EOF
+  $ sudo ls -s /etc/nginx/sites-available/lawzy  /etc/nginx/sites-enabled/
+  $ sudo sudo systemctl restart nginx
   ```
