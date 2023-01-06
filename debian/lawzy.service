@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 User=lawzy
+Group=www-data
 WorkingDirectory=/home/lawzy/lawzy
 Environment="PATH=/home/lawzy/lawzy/venv/bin"
 ExecStart=/home/lawzy/lawzy/venv/bin/uwsgi --ini uwsgi.ini
