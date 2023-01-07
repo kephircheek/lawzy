@@ -69,14 +69,25 @@
   $ sudo systemctl enable lawzy
   ```
 
-6. Serve uWSGI socket with nginx.
+6. Add key and bundle of certs
+   ([help](https://help.reg.ru/support/ssl-sertifikaty/3-etap-ustanovka-ssl-sertifikata/kak-nastroit-ssl-sertifikat-na-nginx))
+   for domain `www.lawzy.ru`
+  ```shell
+  $ sudo mkdir -p /etc/nginx/ssl/lawzy.ru
+  $ sudo cp <path/to/cert> /etc/nginx/ssl/lawzy.ru/lawzy.crt
+  $ sudo cp <path/to/key> /etc/nginx/ssl/lawzy.ru/lawzy.key
+  ```
+
+7. Serve uWSGI socket with nginx.
   ```shell
   $ sudo apt install nginx
   $ sudo tee /etc/nginx/sites-available/lawzy << EOF
   server {
-      listen 80;
+      listen 443 ssl;
       server_name www.lawzy.ru;
-
+      ssl_certificate /etc/nginx/ssl/lawzy.ru/lawzy.crt;
+      ssl_certificate_key /etc/nginx/ssl/lawzy.ru/lawzy.key;
+      
       location / {
           include uwsgi_params;
           uwsgi_pass unix:/home/lawzy/lawzy/lawzy.sock;
