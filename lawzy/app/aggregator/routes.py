@@ -52,12 +52,15 @@ def upload_file():
 
         with open(f'{UPLOAD_FOLDER}/{token}/source{config["EXTENTION"]}', "rb") as f:
             if config["EXTENTION"] == ".docx":
-                content = "\n".join(par.text for par in docx.Document(f).paragraphs)
+                doc = docx.Document(f)
+                struct, style, data = core.parser.parse_docx(
+                    doc, config["SPLIT_SENTENCE_PATTERN"]
+                )
             else:
-                content = f.read().decode("utf-8")
-            struct, style, data = core.txt_extractor(
-                content, config["SPLIT_SENTENCE_PATTERN"]
-            )
+                text = f.read().decode("utf-8")
+                struct, style, data = core.parser.parse_txt(
+                    text, config["SPLIT_SENTENCE_PATTERN"]
+                )
 
         Struct(token).post(struct)
         Style(token).post(style)
@@ -79,7 +82,7 @@ def document():
     checked = "checked" if session["toggle:reduce"] else ""
 
     struct = Struct(token).get()
-    style = Style(token).get()
+    styles = Style(token).get()
     data = Data(token).sentences
     profit = ""
     if session["toggle:reduce"] == True:
@@ -93,8 +96,8 @@ def document():
     else:
         labels = None
     keywords = KeywordEntries(token).get().keys()
-    content = core.compiler(
-        struct, style, data, labels=labels, mute=session["toggle:reduce"], limit=80
+    content = core.compiler.assemble(
+        struct, styles, data, labels=labels, mute=session["toggle:reduce"], limit=80
     )
     return render_template(
         "aggregator/document.html",
@@ -169,7 +172,7 @@ def download():
         labels = Data(token).labels
     else:
         labels = None
-    content = core.compiler(
+    content = core.compiler.assemble(
         struct,
         style,
         data,

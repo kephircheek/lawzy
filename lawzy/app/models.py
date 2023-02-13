@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict, is_dataclass
 
 from lawzy.config import UPLOAD_FOLDER
 
@@ -10,14 +11,58 @@ class Base:
         self.path = f"{UPLOAD_FOLDER}/{token}/{name}.json"
         self.indent = 2
 
+    @staticmethod
+    def _json_default(obj):
+        data = {
+            "__class__": {
+                "__module__": obj.__class__.__module__,
+                "__name__": obj.__class__.__name__,
+            }
+        }
+
+        args, kwargw = None, None
+
+        if is_dataclass(obj):
+            kwargs = {k: getattr(obj, k) for k in asdict(obj).keys()}
+
+        if args is not None or kwargs is not None:
+            data["__init__"] = [[], {}]
+
+            if args is not None and len(args) != 0:
+                data["__init__"][0] = args
+
+            if kwargs is not None and len(kwargs.keys()) != 0:
+                data["__init__"][1] = kwargs
+
+        else:
+            raise TypeError(f"can not serialize: {type(obj)}")
+
+        return data
+
     def post(self, content=None):
         content = content or {}
         with open(self.path, "w") as f:
-            json.dump(content, f, indent=self.indent)
+            json.dump(content, f, indent=self.indent, default=self._json_default)
+
+    @staticmethod
+    def _json_object_hook(dct: dict):
+        if cls_dct := dct.get("__class__"):
+            module_name = cls_dct["__module__"]
+            class_name = cls_dct["__name__"]
+            module = __import__(module_name, globals(), locals(), [class_name], 0)
+            cls = getattr(module, class_name)
+
+            if "__init__" in dct:
+                args, kwargs = dct["__init__"]
+                return cls(*args, **kwargs)
+
+            return cls
+
+        return dct
 
     def get(self):
         with open(self.path) as f:
-            return json.load(f)
+            return json.load(f, object_hook=self._json_object_hook)
 
 
 class Struct(Base):
