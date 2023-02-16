@@ -30,6 +30,7 @@ def hello():
 def new():
     token = session.pop("token")
     shutil.rmtree(f"{UPLOAD_FOLDER}/{token}")
+    session.clear()
     return redirect(url_for("hello"))
 
 
