@@ -1,3 +1,4 @@
+import collections
 import json
 from dataclasses import asdict, is_dataclass
 
@@ -20,7 +21,7 @@ class Base:
             }
         }
 
-        args, kwargw = None, None
+        args, kwargs = None, None
 
         if is_dataclass(obj):
             kwargs = {k: getattr(obj, k) for k in asdict(obj).keys()}
@@ -73,6 +74,12 @@ class Struct(Base):
 class Style(Base):
     def __init__(self, token):
         super().__init__(token, "style")
+
+    def get(self):
+        styles = super().get()
+        styles_ = collections.defaultdict(list)
+        styles_.update(styles)
+        return styles_
 
 
 class KeywordEntries(Base):
