@@ -1,4 +1,5 @@
 import collections
+import itertools
 import json
 import os
 from datetime import datetime
@@ -20,6 +21,8 @@ from lawzy.app.models import Data, KeywordEntries, Struct, Style
 from lawzy.config import UPLOAD_FOLDER
 
 INDENT = 2
+HIDE_PARS_WITHOUT_KEYWORDS = "hide_pars_without_keywords"
+
 # Define the blueprint: 'auth', set its url prefix: app.url/auth
 aggregator = Blueprint("aggregator", __name__, url_prefix="/aggregator")
 
@@ -53,17 +56,17 @@ def upload_file():
         with open(f'{UPLOAD_FOLDER}/{token}/source{config["EXTENTION"]}', "rb") as f:
             if config["EXTENTION"] == ".docx":
                 doc = docx.Document(f)
-                struct, style, data = core.parser.parse_docx(
+                struct, styles, data = core.parser.parse_docx(
                     doc, config["SPLIT_SENTENCE_PATTERN"]
                 )
             else:
                 text = f.read().decode("utf-8")
-                struct, style, data = core.parser.parse_txt(
+                struct, styles, data = core.parser.parse_txt(
                     text, config["SPLIT_SENTENCE_PATTERN"]
                 )
 
         Struct(token).post(struct)
-        Style(token).post(style)
+        Style(token).post(styles)
         Data(token).post({id: [item] for id, item in data.items()})
         KeywordEntries(token).post(dict())
 
@@ -78,6 +81,9 @@ def document():
     token = session["token"]
     if "toggle:reduce" not in session:
         session["toggle:reduce"] = False
+
+    if HIDE_PARS_WITHOUT_KEYWORDS not in session:
+        session[HIDE_PARS_WITHOUT_KEYWORDS] = False
 
     checked = "checked" if session["toggle:reduce"] else ""
 
@@ -106,6 +112,7 @@ def document():
         checked=checked,
         profit=profit,
         reduced=session["reduced"],
+        session=session,
     )
 
 
@@ -166,7 +173,7 @@ def rating():
 def download():
     token = session["token"]
     struct = Struct(token).get()
-    style = Style(token).get()
+    styles = Style(token).get()
     data = Data(token).sentences
     if session["toggle:reduce"] is True:
         labels = Data(token).labels
@@ -174,7 +181,7 @@ def download():
         labels = None
     content = core.compiler.assemble(
         struct,
-        style,
+        styles,
         data,
         labels=labels,
         mute=session["toggle:reduce"],
@@ -184,7 +191,7 @@ def download():
 
     path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/result.docx")
     doc = docx.Document()
-    for par in content.split("\n"):
+    for par in content.split("\n\n"):
         doc.add_paragraph(par)
     doc.save(path)
 
@@ -206,12 +213,12 @@ def add_keywords():
 
     keywords = KeywordEntries(token).get()
     data = Data(token).sentences
-    style = Style(token).get()
+    styles = Style(token).get()
 
     new_keyword_entries = core.search(new_keywords - keywords.keys(), data)
-    style = core.highlight(new_keyword_entries, style)
+    styles = core.highlight(new_keyword_entries, styles)
 
-    Style(token).post(style)
+    Style(token).post(styles)
     KeywordEntries(token).add(new_keyword_entries)
 
     return redirect(url_for("aggregator.document"))
@@ -223,9 +230,36 @@ def delete_tag(keyword):
 
     keyword_entries = {keyword: KeywordEntries(token).pop(keyword)}
 
-    style = Style(token).get()
-    style = core.mutelight(keyword_entries, style)
+    styles = Style(token).get()
+    styles = core.mutelight(
+        keyword_entries, styles, hide_not_matched=session[HIDE_PARS_WITHOUT_KEYWORDS]
+    )
 
-    Style(token).post(style)
+    Style(token).post(styles)
 
+    return redirect(url_for("aggregator.document"))
+
+
+@aggregator.route("/hide_pars_without_keywords", methods=["GET"])
+def hide_pars_without_keywords():
+    token = session["token"]
+    session[HIDE_PARS_WITHOUT_KEYWORDS] = not session[HIDE_PARS_WITHOUT_KEYWORDS]
+    styles = Style(token).get()
+    struct = Struct(token).get()
+    keywords = KeywordEntries(token).get()
+    sentensce_ids = itertools.chain(
+        *((id for id, _, _ in entries) for _, entries in keywords.items())
+    )
+    matched_par_ids = {sentence_id.split("s")[0] for sentence_id in sentensce_ids}
+    par_ids = [
+        node_id
+        for node_id in styles
+        if core.compiler.is_paragraph_id(node_id) and node_id not in matched_par_ids
+    ]
+    if session[HIDE_PARS_WITHOUT_KEYWORDS]:
+        styles = core.processing.hide(styles, par_ids)
+    else:
+        styles = core.processing.unhide(styles)
+
+    Style(token).post(styles)
     return redirect(url_for("aggregator.document"))

@@ -65,6 +65,25 @@
 					</form>
 				{% endfor %}
 			</div>
+
+      <form
+          style="padding: 5px; display: inline-block"
+          action="/aggregator/hide_pars_without_keywords"
+          method="GET"
+          enctype="multipart/form-data">
+          <div class="custom-control custom-switch">
+            <input
+                type="checkbox" {{"checked" if session.hide_pars_without_keywords}}
+                class="custom-control-input"
+                id="switchHideParsWithoutKeywords"
+                onclick="this.form.submit()"/>
+            <label class="custom-control-label" for="switchHideParsWithoutKeywords">
+              <span class="badge badge-outline-secondary" style="font-size: 12pt">
+                Скрыть абзацы без ключевых слов
+              </span>
+            </label>
+          </div>
+      </form>
 		</div>
 		<div class="col-sm-8 order-first" style="height: 100%; overflow: scroll;">
 			<div >

@@ -27,6 +27,17 @@ class FinalNewline(Style):
 
 
 @dataclass(frozen=True)
-class InPlace(Style):
+class Hide(Style):
+    pass
+
+
+@dataclass(frozen=True)
+class InPlaceStyle(Style):
     start: int
     end: int
+
+
+@dataclass(frozen=True)
+class Highlight(InPlaceStyle):
+    label: str = None
+    color: str = "#FF0000"

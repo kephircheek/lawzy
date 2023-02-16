@@ -7,15 +7,12 @@ def correcting(styles, data):
     if not styles:
         return data
 
-    elif styles[-1][0] in {"span", "mark"}:
-        start, end = styles[-1][-1]
+    elif isinstance(s := styles[-1], style.InPlaceStyle):
         data = (
-            correcting(styles[:-1], data[:start])
-            + wrapping([styles[-1]], data[start:end])
-            + data[end:]
+            correcting(styles[:-1], data[: s.start])
+            + wrapping([styles[-1]], data[s.start : s.end])
+            + data[s.end :]
         )
-    else:
-        pass
 
     return data
 
@@ -36,7 +33,13 @@ def make_wrap(s):
         return ("<" + tag(s) + attributes(s) + ">", "</" + tag(s) + ">")
 
     if isinstance(s, style.MarginTop):
-        return f'<div style="margin-top: {s.lines}em;"">', "</div>"
+        return f'<div style="margin-top: {s.lines}em;">', "</div>"
+
+    if isinstance(s, style.Highlight):
+        return f'<span style="background-color: {s.color}">', "</span>"
+
+    if isinstance(s, style.Hide):
+        return f'<div style="display: none">', "</div>"
 
     return "", ""
 
@@ -154,7 +157,7 @@ def assemble(
                     sentence = ""
                     end = ""
 
-            for s in styles.get(node_id, []):
+            for s in styles[node_id]:
                 if isinstance(s, style.ParagraphIndent):
                     indent = "\n" * s.width
 
@@ -165,13 +168,15 @@ def assemble(
         if is_paragraph_id(node_id):
             n_breaklines = 2
             end = ""
-            for s in styles.get(node_id, []):
+            for s in styles[node_id]:
                 if isinstance(s, style.MarginTop):
                     n_breaklines += s.lines
                 elif s == style.FirstParagraph():
                     n_breaklines -= 2
                 elif s == style.FinalNewline():
                     end = "\n"
+                if isinstance(s, style.Hide):
+                    return ""
 
             return n_breaklines * "\n" + content + end
 

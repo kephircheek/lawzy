@@ -6,6 +6,8 @@ from sklearn.cluster import DBSCAN, OPTICS
 from sklearn.feature_extraction.text import TfidfVectorizer as tfv
 from sklearn.metrics.pairwise import cosine_distances
 
+from . import style
+
 
 def split(entries, data):
     id_generator = iter(map(str, range(100_000)))
@@ -73,18 +75,18 @@ def dublicates(labels):
     return dubs
 
 
-def mute(blocks, style):
+def mute(blocks, styles):
     for id in blocks:
-        style[id].append(["div", {"style": "color: #AAAAAA"}])
+        styles[id].append(["div", {"style": "color: #AAAAAA"}])
 
-    return style
+    return styles
 
 
-def unmute(blocks, style):
+def unmute(blocks, styles):
     for id in blocks:
-        style[id] = [s for s in style[id] if s[0] != "div"]
+        styles[id] = [s for s in styles[id] if s[0] != "div"]
 
-    return style
+    return styles
 
 
 def search(patterns, data) -> dict:
@@ -111,25 +113,49 @@ def search(patterns, data) -> dict:
     return entries
 
 
-def highlight(entries, style, colors=None):
+def highlight(entries, styles, colors=None):
     """add highlight of tag in style"""
 
     for tag in entries:
         for entrie in entries[tag]:
-            id, span, _ = entrie
-            style[">" + id].append(
-                ["span", {"style": "background-color: #FF0000"}, tag, span]
+            sentence_id, span, _ = entrie
+            in_sentence_id = f">{sentence_id}"
+            styles[in_sentence_id].append(
+                style.Highlight(start=span[0], end=span[1], label=tag)
             )
-            style[">" + id].sort(key=lambda x: x[3][0] if len(x) > 2 else x)
+            par_id, _ = sentence_id.split("s")
+            styles[par_id] = [s for s in styles[par_id] if not isinstance(s, style.Hide)]
 
-    return style
+    return styles
 
 
-def mutelight(entries, style):
+def mutelight(entries, styles, hide_not_matched=False):
     """ """
     for tag in entries:
         for entrie in entries[tag]:
-            id = entrie[0]
-            style[">" + id] = [style for style in style[">" + id] if style[2] != tag]
+            sentence_id = entrie[0]
+            in_sentence_id = f">{sentence_id}"
+            styles[in_sentence_id] = [
+                s
+                for s in styles[in_sentence_id]
+                if not isinstance(s, style.Highlight) or s.label != tag
+            ]
+            if hide_not_matched:
+                par_id, _ = sentence_id.split("s")
+                styles[par_id].append(style.Hide())
 
-    return style
+    return styles
+
+
+def hide(styles, node_ids):
+    for node_id in node_ids:
+        styles[node_id].append(style.Hide())
+
+    return styles
+
+
+def unhide(styles):
+    for node_id in styles:
+        styles[node_id] = [s for s in styles[node_id] if not isinstance(s, style.Hide)]
+
+    return styles
