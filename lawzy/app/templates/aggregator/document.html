@@ -2,22 +2,22 @@
 {% block aggregator %}
 
 <div class="container-sm" style="height: 100%; padding-left: 10px; padding-right: 10px; padding-top: 20px">
-	<div class="row" style="height: 90%;">
-		<div class="col-sm-4 order-last" style="height: 100%">
-			<form style="padding: 5px; display: inline-block" action="/aggregator/reduce" method="GET" enctype="multipart/form-data">
-				<div class="custom-control custom-switch">
-					<input type="checkbox" {{checked}} class="custom-control-input" id="switchReduce" onclick="this.form.submit()"/>
-					<label class="custom-control-label" for="switchReduce">
-						<span class="badge badge-outline-secondary" style="font-size: 12pt"> Reduce </span>
-					</label>
-				</div>
-			</form>
+  <div class="row" style="height: 90%;">
+    <div class="col-sm-4 order-last" style="height: 100%">
+      <form style="padding: 5px; display: inline-block" action="/aggregator/reduce" method="GET" enctype="multipart/form-data">
+        <div class="custom-control custom-switch">
+          <input type="checkbox" {{checked}} class="custom-control-input" id="switchReduce" onclick="this.form.submit()"/>
+          <label class="custom-control-label" for="switchReduce">
+            <span class="badge badge-outline-secondary" style="font-size: 12pt"> Reduce </span>
+          </label>
+        </div>
+      </form>
 
-			<!-- RATING
-			<a  href="/aggregator/rating" class="badge badge-primary" style="font-size: 12pt;" target="_blank" role="button">Rating</a>
-			-->
+      <!-- RATING
+      <a  href="/aggregator/rating" class="badge badge-primary" style="font-size: 12pt;" target="_blank" role="button">Rating</a>
+      -->
 
-			<a href="/aggregator/download"
+      <a href="/aggregator/download"
          class="badge badge-primary"
          style="font-size: 12pt;"
          target="_blank"
@@ -35,36 +35,36 @@
         </a>
       {% endif %}
 
-			<form style="padding: 5px" action="/aggregator/keywords" method="POST" enctype="multipart/form-data">
-				<div class="input-group input-group-sm">
-					<div class="input-group-prepend">
-						<span class="input-group-text" id="inputTag">@</span>
-					</div>
-					<input type="text"
-						   name="text"
-						   class="form-control"
-						   placeholder="keyword"
-						   aria-describedby="inputTag"
-						   id="inputTag"/>
-					<div class="input-group-append">
-						<input class="btn btn-primary" type="submit"
-							   value="Add"
-		  					   id="inputTag">
+      <form style="padding: 5px" action="/aggregator/keywords" method="POST" enctype="multipart/form-data">
+        <div class="input-group input-group-sm">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="inputTag">@</span>
+          </div>
+          <input type="text"
+               name="text"
+               class="form-control"
+               placeholder="keyword"
+               aria-describedby="inputTag"
+               id="inputTag"/>
+          <div class="input-group-append">
+            <input class="btn btn-primary" type="submit"
+                 value="Add"
+                   id="inputTag">
 
-					</div>
-				</div>
-			</form>
+          </div>
+        </div>
+      </form>
 
-			<div style="padding: 5px">
-				{% for kw in keywords %}
-					<form action="/aggregator/keywords/{{kw}}" method="GET"
-						  enctype="multipart/form-data" style="display: inline-block">
-						<button type="submit" class="badge badge-danger text-white">
-							{{ kw }} <span style="font-size: 12px"> &times; </span>
-						</button>
-					</form>
-				{% endfor %}
-			</div>
+      <div style="padding: 5px">
+        {% for kw in keywords %}
+          <form action="/aggregator/keywords/{{kw}}" method="GET"
+              enctype="multipart/form-data" style="display: inline-block">
+            <button type="submit" class="badge badge-danger text-white">
+              {{ kw }} <span style="font-size: 12px"> &times; </span>
+            </button>
+          </form>
+        {% endfor %}
+      </div>
 
       <form
           style="padding: 5px; display: inline-block"
@@ -96,17 +96,17 @@
         {% endfor %}
         </ul>
       </div>
-		</div>
-		<div class="col-sm-8 order-first" style="height: 100%; overflow: scroll;">
-			<div >
-				{{ content|safe}}
-			</div>
-		</div>
-	</div>
-	<div class="row" style="height: 3%; background-color: #666666">
-		<div class="col text-right text-white">
-			#
-		</div>
-	</div>
+    </div>
+    <div class="col-sm-8 order-first" style="height: 100%; overflow: scroll;">
+      <div >
+        {{ content|safe}}
+      </div>
+    </div>
+  </div>
+  <div class="row" style="height: 3%; background-color: #666666">
+    <div class="col text-right text-white">
+      #
+    </div>
+  </div>
 </div>
 {% endblock %}
