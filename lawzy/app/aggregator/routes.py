@@ -226,6 +226,45 @@ def download():
     )
 
 
+@aggregator.route("/merge_and_download", methods=["GET"])
+def merge_and_download():
+    token = session["token"]
+    doc = docx.Document()
+    for document_id in document_ids(token):
+        doc.add_paragraph(document_name(token, document_id))
+
+        struct = Struct(token, document_id).get()
+        styles = Style(token, document_id).get()
+        data = Data(token, document_id).sentences
+        if session["toggle:reduce"] is True:
+            labels = Data(token, document_id).labels
+        else:
+            labels = None
+        content = core.compiler.assemble(
+            struct,
+            styles,
+            data,
+            labels=labels,
+            mute=session["toggle:reduce"],
+            out_type="txt",
+            limit=40,
+        )
+
+        for par in content.split("\n\n"):
+            doc.add_paragraph(par)
+
+        doc.add_paragraph("=" * 70)
+
+    path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/merge_all.docx")
+    doc.save(path)
+
+    return send_file(
+        path,
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        download_name=f"merged.docx",
+    )
+
+
 @aggregator.route("/keywords", methods=["POST"])
 def add_keywords():
     token = session["token"]
