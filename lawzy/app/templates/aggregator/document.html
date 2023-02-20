@@ -84,6 +84,18 @@
             </label>
           </div>
       </form>
+      <div>
+        <h3>Список документов</h3>
+        <ul>
+        {% for document_id, document_name in documents %}
+        {% if document_id == session["document_id"] %}
+          <li>{{document_name}}</li>
+        {% else %}
+          <li><a href="/aggregator/document/{{document_id}}">{{document_name}}</a></li>
+        {% endif %}
+        {% endfor %}
+        </ul>
+      </div>
 		</div>
 		<div class="col-sm-8 order-first" style="height: 100%; overflow: scroll;">
 			<div >

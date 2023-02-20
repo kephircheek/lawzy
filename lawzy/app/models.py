@@ -9,6 +9,13 @@ def document_ids(token):
     return [item.name for item in (UPLOAD_FOLDER / str(token)).iterdir() if item.is_dir()]
 
 
+def document_name(token, document_id):
+    config = json.loads(
+        (UPLOAD_FOLDER / str(token) / str(document_id) / "config.json").read_text()
+    )
+    return config["FILENAME"] + config["EXTENSION"]
+
+
 class Base:
     def __init__(self, token, document_id, name):
         self.token = token

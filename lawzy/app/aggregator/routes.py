@@ -17,7 +17,14 @@ from flask import (
 )
 
 from lawzy import core
-from lawzy.app.models import Data, KeywordEntries, Struct, Style, document_ids
+from lawzy.app.models import (
+    Data,
+    KeywordEntries,
+    Struct,
+    Style,
+    document_ids,
+    document_name,
+)
 from lawzy.config import UPLOAD_FOLDER
 
 INDENT = 2
@@ -66,7 +73,7 @@ def upload_file():
 
             document_config = {
                 "FILENAME": filename,
-                "EXTENTION": extention,
+                "EXTENSION": extention,
                 "PATH_SOURCE": path_source,
             }
             path_document = UPLOAD_FOLDER / f"{token}/{document_id}"
@@ -124,6 +131,7 @@ def document(document_id: str):
         profit=profit,
         reduced=session["reduced"],
         session=session,
+        documents=sorted((id, document_name(token, id)) for id in document_ids(token)),
     )
 
 
