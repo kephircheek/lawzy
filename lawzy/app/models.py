@@ -5,6 +5,10 @@ from dataclasses import asdict, is_dataclass
 from lawzy.config import UPLOAD_FOLDER
 
 
+def document_ids(token):
+    return [item.name for item in (UPLOAD_FOLDER / str(token)).iterdir() if item.is_dir()]
+
+
 class Base:
     def __init__(self, token, document_id, name):
         self.token = token

@@ -17,7 +17,7 @@ from flask import (
 )
 
 from lawzy import core
-from lawzy.app.models import Data, KeywordEntries, Struct, Style
+from lawzy.app.models import Data, KeywordEntries, Struct, Style, document_ids
 from lawzy.config import UPLOAD_FOLDER
 
 INDENT = 2
@@ -47,40 +47,39 @@ def upload_file():
         with open(f"{UPLOAD_FOLDER}/{token}/config.json", "w") as f:
             json.dump(project_config, f, indent=INDENT)
 
-        f = request.files["file"]
-        filename, extention = os.path.splitext(os.path.basename(f.filename))
-        path_source = f"{UPLOAD_FOLDER}/{token}/source{extention}"
-        f.save(path_source)
+        for document_id, f in enumerate(request.files.getlist("file")):
+            filename, extention = os.path.splitext(os.path.basename(f.filename))
+            path_source = f"{UPLOAD_FOLDER}/{token}/source{extention}"
+            f.save(path_source)
 
-        with open(path_source, "rb") as f:
-            if extention == ".docx":
-                doc = docx.Document(f)
-                struct, styles, data = core.parser.parse_docx(
-                    doc, project_config["SPLIT_SENTENCE_PATTERN"]
-                )
-            else:
-                text = f.read().decode("utf-8")
-                struct, styles, data = core.parser.parse_txt(
-                    text, project_config["SPLIT_SENTENCE_PATTERN"]
-                )
+            with open(path_source, "rb") as f:
+                if extention == ".docx":
+                    doc = docx.Document(f)
+                    struct, styles, data = core.parser.parse_docx(
+                        doc, project_config["SPLIT_SENTENCE_PATTERN"]
+                    )
+                else:
+                    text = f.read().decode("utf-8")
+                    struct, styles, data = core.parser.parse_txt(
+                        text, project_config["SPLIT_SENTENCE_PATTERN"]
+                    )
 
-        document_id = uuid4()
-        document_config = {
-            "FILENAME": filename,
-            "EXTENTION": extention,
-            "PATH_SOURCE": path_source,
-        }
-        path_document = UPLOAD_FOLDER / f"{token}/{document_id}"
-        path_document.mkdir()
-        with open(path_document / "config.json", "w") as f:
-            json.dump(document_config, f, indent=INDENT)
+            document_config = {
+                "FILENAME": filename,
+                "EXTENTION": extention,
+                "PATH_SOURCE": path_source,
+            }
+            path_document = UPLOAD_FOLDER / f"{token}/{document_id}"
+            path_document.mkdir()
+            with open(path_document / "config.json", "w") as f:
+                json.dump(document_config, f, indent=INDENT)
 
-        Struct(token, document_id).post(struct)
-        Style(token, document_id).post(styles)
-        Data(token, document_id).post({id: [item] for id, item in data.items()})
-        KeywordEntries(token, document_id).post(dict())
+            Struct(token, document_id).post(struct)
+            Style(token, document_id).post(styles)
+            Data(token, document_id).post({id: [item] for id, item in data.items()})
+            KeywordEntries(token, document_id).post(dict())
 
-        return redirect(url_for("aggregator.document", document_id=str(document_id)))
+        return redirect(url_for("aggregator.document", document_id=str(0)))
 
 
 @aggregator.route("document/<document_id>", methods=["GET", "POST"])
@@ -89,6 +88,8 @@ def document(document_id: str):
         return redirect(url_for("hello"))
 
     token = session["token"]
+    session["document_id"] = document_id
+
     if "toggle:reduce" not in session:
         session["toggle:reduce"] = False
 
@@ -130,27 +131,28 @@ def document(document_id: str):
 def reduce():
     token = session["token"]
 
-    if not session["reduced"]:
-        labels = core.group(Data(token).sentences)
-        Data(token).add(labels)
-        dubs = core.dublicates(labels)
-        Data(token).add(dubs)
-        session["reduced"] = True
+    for document_id in document_ids(token):
+        if not session["reduced"]:
+            labels = core.group(Data(token, document_id).sentences)
+            Data(token, document_id).add(labels)
+            dubs = core.dublicates(labels)
+            Data(token, document_id).add(dubs)
 
-    dubs = {id for id, bool in Data(token).dublicates.items() if bool == True}
+    session["reduced"] = True
     session["toggle:reduce"] = not session["toggle:reduce"]
 
-    return redirect(url_for("aggregator.document"))
+    return redirect(url_for("aggregator.document", document_id=session["document_id"]))
 
 
 @aggregator.route("/rating", methods=["GET"])
 def rating():
 
     token = session["token"]
-    path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/rating.txt")
+    document_id = session["document_id"]
+    path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/{document_id}/rating.txt")
 
     if not os.path.isfile(path):
-        data = Data(token)
+        data = Data(token, document_id)
         label_counter = collections.Counter(data.labels.values())
         label_counter.pop(-1)
         sentences_by_label = collections.defaultdict(
@@ -182,11 +184,12 @@ def rating():
 @aggregator.route("/download", methods=["GET"])
 def download():
     token = session["token"]
-    struct = Struct(token).get()
-    styles = Style(token).get()
-    data = Data(token).sentences
+    document_id = session["document_id"]
+    struct = Struct(token, document_id).get()
+    styles = Style(token, document_id).get()
+    data = Data(token, document_id).sentences
     if session["toggle:reduce"] is True:
-        labels = Data(token).labels
+        labels = Data(token, document_id).labels
     else:
         labels = None
     content = core.compiler.assemble(
@@ -199,13 +202,13 @@ def download():
         limit=40,
     )
 
-    path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/result.docx")
+    path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/{document_id}/result.docx")
     doc = docx.Document()
     for par in content.split("\n\n"):
         doc.add_paragraph(par)
     doc.save(path)
 
-    with open(f"{UPLOAD_FOLDER}/{token}/config.json") as f:
+    with open(f"{UPLOAD_FOLDER}/{token}/{document_id}/config.json") as f:
         config = json.load(f)
     filename = config["FILENAME"]
     return send_file(
@@ -219,57 +222,62 @@ def download():
 def add_keywords():
     token = session["token"]
 
-    new_keywords = {item.strip().casefold() for item in request.form["text"].split(",")}
+    for document_id in document_ids(token):
+        new_keywords = {
+            item.strip().casefold() for item in request.form["text"].split(",")
+        }
 
-    keywords = KeywordEntries(token).get()
-    data = Data(token).sentences
-    styles = Style(token).get()
+        keywords = KeywordEntries(token, document_id).get()
+        data = Data(token, document_id).sentences
+        styles = Style(token, document_id).get()
 
-    new_keyword_entries = core.search(new_keywords - keywords.keys(), data)
-    styles = core.highlight(new_keyword_entries, styles)
+        new_keyword_entries = core.search(new_keywords - keywords.keys(), data)
+        styles = core.highlight(new_keyword_entries, styles)
 
-    Style(token).post(styles)
-    KeywordEntries(token).add(new_keyword_entries)
+        Style(token, document_id).post(styles)
+        KeywordEntries(token, document_id).add(new_keyword_entries)
 
-    return redirect(url_for("aggregator.document"))
+    return redirect(url_for("aggregator.document", document_id=session["document_id"]))
 
 
 @aggregator.route("/keywords/<string:keyword>", methods=["GET"])
 def delete_tag(keyword):
     token = session["token"]
 
-    keyword_entries = {keyword: KeywordEntries(token).pop(keyword)}
+    for document_id in document_ids(token):
+        keyword_entries = {keyword: KeywordEntries(token, document_id).pop(keyword)}
 
-    styles = Style(token).get()
-    styles = core.mutelight(
-        keyword_entries, styles, hide_not_matched=session[HIDE_PARS_WITHOUT_KEYWORDS]
-    )
+        styles = Style(token, document_id).get()
+        styles = core.mutelight(
+            keyword_entries, styles, hide_not_matched=session[HIDE_PARS_WITHOUT_KEYWORDS]
+        )
 
-    Style(token).post(styles)
+        Style(token, document_id).post(styles)
 
-    return redirect(url_for("aggregator.document"))
+    return redirect(url_for("aggregator.document", document_id=session["document_id"]))
 
 
 @aggregator.route("/hide_pars_without_keywords", methods=["GET"])
 def hide_pars_without_keywords():
     token = session["token"]
     session[HIDE_PARS_WITHOUT_KEYWORDS] = not session[HIDE_PARS_WITHOUT_KEYWORDS]
-    styles = Style(token).get()
-    struct = Struct(token).get()
-    keywords = KeywordEntries(token).get()
-    sentensce_ids = itertools.chain(
-        *((id for id, _, _ in entries) for _, entries in keywords.items())
-    )
-    matched_par_ids = {sentence_id.split("s")[0] for sentence_id in sentensce_ids}
-    par_ids = [
-        node_id
-        for node_id in styles
-        if core.compiler.is_paragraph_id(node_id) and node_id not in matched_par_ids
-    ]
-    if session[HIDE_PARS_WITHOUT_KEYWORDS]:
-        styles = core.processing.hide(styles, par_ids)
-    else:
-        styles = core.processing.unhide(styles)
+    for document_id in document_ids(token):
+        styles = Style(token, document_id).get()
+        struct = Struct(token, document_id).get()
+        keywords = KeywordEntries(token, document_id).get()
+        sentensce_ids = itertools.chain(
+            *((id for id, _, _ in entries) for _, entries in keywords.items())
+        )
+        matched_par_ids = {sentence_id.split("s")[0] for sentence_id in sentensce_ids}
+        par_ids = [
+            node_id
+            for node_id in styles
+            if core.compiler.is_paragraph_id(node_id) and node_id not in matched_par_ids
+        ]
+        if session[HIDE_PARS_WITHOUT_KEYWORDS]:
+            styles = core.processing.hide(styles, par_ids)
+        else:
+            styles = core.processing.unhide(styles)
 
-    Style(token).post(styles)
-    return redirect(url_for("aggregator.document"))
+        Style(token, document_id).post(styles)
+    return redirect(url_for("aggregator.document", document_id=session["document_id"]))
