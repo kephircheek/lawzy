@@ -37,13 +37,7 @@ def upload_file():
         session["reduced"] = False
         os.makedirs(f"{UPLOAD_FOLDER}/{token}")
 
-        f = request.files["file"]
-        filename, extention = os.path.splitext(os.path.basename(f.filename))
-        f.save(f"{UPLOAD_FOLDER}/{token}/source{extention}")
-
-        config = {
-            "FILENAME": filename,
-            "EXTENTION": extention,
+        project_config = {
             "DATE_CREATED": str(datetime.now()),
             "SPLIT_SENTENCE_PATTERN": r"(?<=[^( г| N| ном)]\.)\s+(?=[^\Wа-яa-z0-9])",
             "SPLIT_CASE_PATTERN": "Документ предоставлен КонсультантПлюс",
@@ -51,30 +45,46 @@ def upload_file():
         }
 
         with open(f"{UPLOAD_FOLDER}/{token}/config.json", "w") as f:
-            json.dump(config, f, indent=INDENT)
+            json.dump(project_config, f, indent=INDENT)
 
-        with open(f'{UPLOAD_FOLDER}/{token}/source{config["EXTENTION"]}', "rb") as f:
-            if config["EXTENTION"] == ".docx":
+        f = request.files["file"]
+        filename, extention = os.path.splitext(os.path.basename(f.filename))
+        path_source = f"{UPLOAD_FOLDER}/{token}/source{extention}"
+        f.save(path_source)
+
+        with open(path_source, "rb") as f:
+            if extention == ".docx":
                 doc = docx.Document(f)
                 struct, styles, data = core.parser.parse_docx(
-                    doc, config["SPLIT_SENTENCE_PATTERN"]
+                    doc, project_config["SPLIT_SENTENCE_PATTERN"]
                 )
             else:
                 text = f.read().decode("utf-8")
                 struct, styles, data = core.parser.parse_txt(
-                    text, config["SPLIT_SENTENCE_PATTERN"]
+                    text, project_config["SPLIT_SENTENCE_PATTERN"]
                 )
 
-        Struct(token).post(struct)
-        Style(token).post(styles)
-        Data(token).post({id: [item] for id, item in data.items()})
-        KeywordEntries(token).post(dict())
+        document_id = uuid4()
+        document_config = {
+            "FILENAME": filename,
+            "EXTENTION": extention,
+            "PATH_SOURCE": path_source,
+        }
+        path_document = UPLOAD_FOLDER / f"{token}/{document_id}"
+        path_document.mkdir()
+        with open(path_document / "config.json", "w") as f:
+            json.dump(document_config, f, indent=INDENT)
 
-        return redirect(url_for("aggregator.document"))
+        Struct(token, document_id).post(struct)
+        Style(token, document_id).post(styles)
+        Data(token, document_id).post({id: [item] for id, item in data.items()})
+        KeywordEntries(token, document_id).post(dict())
+
+        return redirect(url_for("aggregator.document", document_id=str(document_id)))
 
 
-@aggregator.route("/", methods=["GET", "POST"])
-def document():
+@aggregator.route("document/<document_id>", methods=["GET", "POST"])
+def document(document_id: str):
     if "token" not in session:
         return redirect(url_for("hello"))
 
@@ -87,12 +97,12 @@ def document():
 
     checked = "checked" if session["toggle:reduce"] else ""
 
-    struct = Struct(token).get()
-    styles = Style(token).get()
-    data = Data(token).sentences
+    struct = Struct(token, document_id).get()
+    styles = Style(token, document_id).get()
+    data = Data(token, document_id).sentences
     profit = ""
     if session["toggle:reduce"] == True:
-        labels = Data(token).labels
+        labels = Data(token, document_id).labels
         number_all = len(labels)
         number_of_group = len(set(labels.values())) - 1
         number_non_grouped = len(list(filter(lambda x: x == -1, labels.values())))
@@ -101,7 +111,7 @@ def document():
 
     else:
         labels = None
-    keywords = KeywordEntries(token).get().keys()
+    keywords = KeywordEntries(token, document_id).get().keys()
     content = core.compiler.assemble(
         struct, styles, data, labels=labels, mute=session["toggle:reduce"], limit=80
     )

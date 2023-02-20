@@ -6,10 +6,10 @@ from lawzy.config import UPLOAD_FOLDER
 
 
 class Base:
-    def __init__(self, token, name):
+    def __init__(self, token, document_id, name):
         self.token = token
         self.name = name
-        self.path = f"{UPLOAD_FOLDER}/{token}/{name}.json"
+        self.path = f"{UPLOAD_FOLDER}/{token}/{document_id}/{name}.json"
         self.indent = 2
 
     @staticmethod
@@ -67,13 +67,13 @@ class Base:
 
 
 class Struct(Base):
-    def __init__(self, token):
-        super().__init__(token, "struct")
+    def __init__(self, token, document_id):
+        super().__init__(token, document_id, "struct")
 
 
 class Style(Base):
-    def __init__(self, token):
-        super().__init__(token, "style")
+    def __init__(self, token, document_id):
+        super().__init__(token, document_id, "style")
 
     def get(self):
         styles = super().get()
@@ -83,8 +83,8 @@ class Style(Base):
 
 
 class KeywordEntries(Base):
-    def __init__(self, token):
-        super().__init__(token, "keywords")
+    def __init__(self, token, document_id):
+        super().__init__(token, document_id, "keywords")
 
     def pop(self, keyword):
         content = self.get()
@@ -99,8 +99,8 @@ class KeywordEntries(Base):
 
 
 class Data(Base):
-    def __init__(self, token):
-        super().__init__(token, "data")
+    def __init__(self, token, document_id):
+        super().__init__(token, document_id, "data")
 
     def add(self, column):
         content = self.get()
