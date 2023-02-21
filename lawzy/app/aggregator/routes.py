@@ -56,7 +56,9 @@ def upload_file():
 
         for document_id, f in enumerate(request.files.getlist("file")):
             filename, extention = os.path.splitext(os.path.basename(f.filename))
-            path_source = f"{UPLOAD_FOLDER}/{token}/source{extention}"
+            path_document = UPLOAD_FOLDER / f"{token}/{document_id}"
+            path_document.mkdir()
+            path_source = path_document / f"source{extention}"
             f.save(path_source)
 
             with open(path_source, "rb") as f:
@@ -74,10 +76,8 @@ def upload_file():
             document_config = {
                 "FILENAME": filename,
                 "EXTENSION": extention,
-                "PATH_SOURCE": path_source,
+                "PATH_SOURCE": str(path_source),
             }
-            path_document = UPLOAD_FOLDER / f"{token}/{document_id}"
-            path_document.mkdir()
             with open(path_document / "config.json", "w") as f:
                 json.dump(document_config, f, indent=INDENT)
 
