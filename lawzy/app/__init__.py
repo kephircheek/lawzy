@@ -22,7 +22,7 @@ def not_found(error):
 @app.route("/", methods=["GET", "POST"])
 def hello():
     if "token" in session and os.path.exists(f'{UPLOAD_FOLDER}/{session["token"]}'):
-        return redirect(url_for("aggregator.document"))
+        return redirect(url_for("aggregator.document", document_id=session["document_id"]))
     return render_template("hello.html")
 
 
