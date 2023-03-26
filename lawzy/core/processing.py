@@ -112,7 +112,7 @@ def search(patterns, data) -> dict:
     return entries
 
 
-def highlight(entries, styles, colors=None):
+def highlight(entries, styles, stylist):
     """add highlight of tag in style"""
 
     for tag in entries:
@@ -120,15 +120,22 @@ def highlight(entries, styles, colors=None):
             sentence_id, span, _ = entrie
             in_sentence_id = f">{sentence_id}"
             styles[in_sentence_id].append(
-                style.Highlight(start=span[0], end=span[1], label=tag)
+                style.Highlight(stylist, start=span[0], end=span[1], label=tag)
             )
             par_id, _ = sentence_id.split("s")
-            styles[par_id] = [s for s in styles[par_id] if not isinstance(s, style.Hide)]
+            styles[par_id] = [
+                s
+                for s in styles[par_id]
+                if not (
+                    isinstance(s, style.Hide)
+                    and (True if stylist is None else s.stylist == stylist)
+                )
+            ]
 
     return styles
 
 
-def mutelight(entries, styles, hide_not_matched=False):
+def mutelight(entries, styles, stylist, hide_not_matched=False):
     """ """
     for tag in entries:
         for entrie in entries[tag]:
@@ -141,20 +148,26 @@ def mutelight(entries, styles, hide_not_matched=False):
             ]
             if hide_not_matched:
                 par_id, _ = sentence_id.split("s")
-                styles[par_id].append(style.Hide())
+                styles[par_id].append(style.Hide(stylist))
 
     return styles
 
 
-def hide(styles, node_ids):
+def hide(styles, node_ids, stylist):
     for node_id in node_ids:
-        styles[node_id].append(style.Hide())
+        styles[node_id].append(style.Hide(stylist))
 
     return styles
 
 
-def unhide(styles):
+def unhide(styles, stylist=None):
     for node_id in styles:
-        styles[node_id] = [s for s in styles[node_id] if not isinstance(s, style.Hide)]
-
+        styles[node_id] = [
+            s
+            for s in styles[node_id]
+            if not (
+                isinstance(s, style.Hide)
+                and (True if stylist is None else s.stylist == stylist)
+            )
+        ]
     return styles

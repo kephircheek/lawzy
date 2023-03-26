@@ -171,9 +171,9 @@ def assemble(
             for s in styles[node_id]:
                 if isinstance(s, style.MarginTop):
                     n_breaklines += s.lines
-                elif s == style.FirstParagraph():
+                elif isinstance(s, style.FirstParagraph):
                     n_breaklines -= 2
-                elif s == style.FinalNewline():
+                elif isinstance(s, style.FinalNewline):
                     end = "\n"
                 if isinstance(s, style.Hide):
                     return ""

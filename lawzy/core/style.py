@@ -1,9 +1,20 @@
 from dataclasses import dataclass
+from enum import Enum
+
+
+class Stylist(Enum):
+    REDUCER = "reducer"
+    TAGSEARCHER = "tag_searcher"
+    EXTRACTOR = "extractor"
+
+
+class Color(Enum):
+    GRAY = "#808080"
 
 
 @dataclass(frozen=True)
 class Style:
-    pass
+    stylist: Stylist | None
 
 
 @dataclass(frozen=True)

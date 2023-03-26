@@ -1,4 +1,5 @@
 import collections
+import enum
 import json
 from dataclasses import asdict, is_dataclass
 
@@ -46,6 +47,9 @@ class Base:
             if kwargs is not None and len(kwargs.keys()) != 0:
                 data["__init__"][1] = kwargs
 
+        elif isinstance(obj, enum.Enum):
+            data["__getattr__"] = obj.name
+
         else:
             raise TypeError(f"can not serialize: {type(obj)}")
 
@@ -67,6 +71,9 @@ class Base:
             if "__init__" in dct:
                 args, kwargs = dct["__init__"]
                 return cls(*args, **kwargs)
+
+            if "__getattr__" in dct:
+                return getattr(cls, dct["__getattr__"])
 
             return cls
 

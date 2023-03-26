@@ -31,13 +31,13 @@ def parse_txt(content, split_sentence_pattern):
         if re.search(r"^[ \t\r\f\v]*\n", par):
             par_offset += 1
 
-        styles[par_id].append(style.MarginTop(par_offset))
+        styles[par_id].append(style.MarginTop(style.Stylist.EXTRACTOR, par_offset))
 
         if par_number == 0:
-            styles[par_id].append(style.FirstParagraph())
+            styles[par_id].append(style.FirstParagraph(style.Stylist.EXTRACTOR))
 
         if re.search(r"\n[ \t\r\f\v]*$", par):
-            styles[par_id].append(style.FinalNewline())
+            styles[par_id].append(style.FinalNewline(style.Stylist.EXTRACTOR))
 
         sentences = re.split(split_sentence_pattern, par.strip())
         for sentence_i, sentence in enumerate(sentences):
@@ -46,7 +46,9 @@ def parse_txt(content, split_sentence_pattern):
             if sentence_i == 0:
                 indent = re.search(r"^\s+", sentence)
                 indent_len = abs(int.__sub__(*indent.span())) if indent is not None else 0
-                styles[sentence_id].append(style.ParagraphIndent(indent_len))
+                styles[sentence_id].append(
+                    style.ParagraphIndent(style.Stylist.EXTRACTOR, indent_len)
+                )
 
             data[sentence_id] = sentence.strip().replace("\n", " ")
 

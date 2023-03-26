@@ -278,7 +278,9 @@ def add_keywords():
         styles = Style(token, document_id).get()
 
         new_keyword_entries = core.search(new_keywords - keywords.keys(), data)
-        styles = core.highlight(new_keyword_entries, styles)
+        styles = core.highlight(
+            new_keyword_entries, styles, stylist=core.style.Stylist.TAGSEARCHER
+        )
 
         Style(token, document_id).post(styles)
         KeywordEntries(token, document_id).add(new_keyword_entries)
@@ -295,7 +297,10 @@ def delete_tag(keyword):
 
         styles = Style(token, document_id).get()
         styles = core.mutelight(
-            keyword_entries, styles, hide_not_matched=session[HIDE_PARS_WITHOUT_KEYWORDS]
+            keyword_entries,
+            styles,
+            stylist=core.style.Stylist.TAGSEARCHER,
+            hide_not_matched=session[HIDE_PARS_WITHOUT_KEYWORDS],
         )
 
         Style(token, document_id).post(styles)
@@ -321,9 +326,11 @@ def hide_pars_without_keywords():
             if core.compiler.is_paragraph_id(node_id) and node_id not in matched_par_ids
         ]
         if session[HIDE_PARS_WITHOUT_KEYWORDS]:
-            styles = core.processing.hide(styles, par_ids)
+            styles = core.processing.hide(
+                styles, par_ids, stylist=core.style.Stylist.TAGSEARCHER
+            )
         else:
-            styles = core.processing.unhide(styles)
+            styles = core.processing.unhide(styles, core.style.Stylist.TAGSEARCHER)
 
         Style(token, document_id).post(styles)
     return redirect(url_for("aggregator.document", document_id=session["document_id"]))
