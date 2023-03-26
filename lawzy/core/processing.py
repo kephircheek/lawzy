@@ -61,7 +61,7 @@ def group(data, min_samples=3, eps=0.07):
     return {id: sentence_labels.get(sentence, -1) for id, sentence in data.items()}
 
 
-def dublicates(labels):
+def duplicates(labels):
     added = set()
     dubs = dict()
     for id in labels:
@@ -171,3 +171,48 @@ def unhide(styles, stylist=None):
             )
         ]
     return styles
+
+
+def stylize_duplicates(styles, labels, limit=None):
+    """Stylize duplicates"""
+    stylist = style.Stylist.REDUCER
+    labels_counter = Counter(labels.values())
+
+    def id_as_tuple(id_str):
+        return tuple(map(int, re.findall(r"\d+", id_str)))
+
+    labels = sorted(list(labels.items()), key=lambda x: id_as_tuple(x[0]))
+    labels_occurrene = {label: 0 for label in labels_counter}
+    for sentence_id, label in labels:
+        if label < 0:
+            styles[sentence_id].append(style.Exclusive(stylist))
+            continue
+
+        label_occurrene = labels_occurrene[label]
+        label_count = labels_counter[label]
+        styles[sentence_id].append(
+            style.Repetition(
+                stylist, label=label, i=label_occurrene, n=label_count
+            )
+        )
+
+        if label_occurrene >= limit:
+            styles[sentence_id].append(style.Hide(stylist))
+
+        elif label_occurrene > 0:
+            styles[sentence_id].append(
+                style.FontColor(stylist, style.Color.GRAY)
+            )
+
+        labels_occurrene[label] += 1
+
+    return styles
+
+
+def remove_reducer_styles(styles):
+    """Remove styles of REDUCER stylist."""
+    return {
+        id: s_
+        for id, styles_ in styles.items()
+        if len(s_ := [s for s in styles_ if s.stylist != style.Stylist.REDUCER]) > 0
+    }

@@ -120,9 +120,7 @@ def document(document_id: str):
     else:
         labels = None
     keywords = KeywordEntries(token, document_id).get().keys()
-    content = core.compiler.assemble(
-        struct, styles, data, labels=labels, mute=session["toggle:reduce"], limit=80
-    )
+    content = core.compiler.assemble(struct, styles, data)
     return render_template(
         "aggregator/document.html",
         content=content,
@@ -139,16 +137,26 @@ def document(document_id: str):
 def reduce():
     token = session["token"]
 
+    session["toggle:reduce"] = not session["toggle:reduce"]
     for document_id in document_ids(token):
+        data = Data(token, document_id)
         if not session["reduced"]:
             labels = core.group(Data(token, document_id).sentences)
-            Data(token, document_id).add(labels)
-            dubs = core.dublicates(labels)
-            Data(token, document_id).add(dubs)
+            data.add(labels)
+            dubs = core.duplicates(labels)
+            data.add(dubs)
+        else:
+            labels = data.labels
+
+        styles_manager = Style(token, document_id)
+        styles = styles_manager.get()
+        if session["toggle:reduce"]:
+            styles = core.processing.stylize_duplicates(styles, labels, limit=10)
+        else:
+            styles = core.processing.remove_reducer_styles(styles)
+        styles_manager.post(styles)
 
     session["reduced"] = True
-    session["toggle:reduce"] = not session["toggle:reduce"]
-
     return redirect(url_for("aggregator.document", document_id=session["document_id"]))
 
 
@@ -195,19 +203,7 @@ def download():
     struct = Struct(token, document_id).get()
     styles = Style(token, document_id).get()
     data = Data(token, document_id).sentences
-    if session["toggle:reduce"] is True:
-        labels = Data(token, document_id).labels
-    else:
-        labels = None
-    content = core.compiler.assemble(
-        struct,
-        styles,
-        data,
-        labels=labels,
-        mute=session["toggle:reduce"],
-        out_type="txt",
-        limit=40,
-    )
+    content = core.compiler.assemble(struct, styles, data, out_type="txt")
 
     path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/{document_id}/result.docx")
     doc = docx.Document()
@@ -217,7 +213,7 @@ def download():
 
     with open(f"{UPLOAD_FOLDER}/{token}/{document_id}/config.json") as f:
         config = json.load(f)
-    filename = config["FILENAME"]
+        filename = config["FILENAME"] + ("_reduced" if session["toggle:reduce"] else "")
     return send_file(
         path,
         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -235,19 +231,7 @@ def merge_and_download():
         struct = Struct(token, document_id).get()
         styles = Style(token, document_id).get()
         data = Data(token, document_id).sentences
-        if session["toggle:reduce"] is True:
-            labels = Data(token, document_id).labels
-        else:
-            labels = None
-        content = core.compiler.assemble(
-            struct,
-            styles,
-            data,
-            labels=labels,
-            mute=session["toggle:reduce"],
-            out_type="txt",
-            limit=40,
-        )
+        content = core.compiler.assemble(struct, styles, data, out_type="txt")
 
         for par in content.split("\n\n"):
             doc.add_paragraph(par)

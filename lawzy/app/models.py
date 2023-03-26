@@ -143,5 +143,5 @@ class Data(Base):
         return {id: item[1] for id, item in self.get().items()}
 
     @property
-    def dublicates(self):
+    def duplicates(self):
         return {id: item[2] for id, item in self.get().items()}

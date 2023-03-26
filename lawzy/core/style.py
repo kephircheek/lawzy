@@ -52,3 +52,19 @@ class InPlaceStyle(Style):
 class Highlight(InPlaceStyle):
     label: str = None
     color: str = "#FF0000"
+
+
+@dataclass(frozen=True)
+class Repetition(Style):
+    label: int
+    i: int
+    n: int
+
+
+@dataclass(frozen=True)
+class Exclusive(Style):
+    pass
+
+@dataclass(frozen=True)
+class FontColor(Style):
+    color: str

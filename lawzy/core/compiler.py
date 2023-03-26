@@ -41,6 +41,22 @@ def make_wrap(s):
     if isinstance(s, style.Hide):
         return f'<div style="display: none">', "</div>"
 
+    if isinstance(s, style.Repetition):
+        label = (
+            f'<a href="#Label{s.label}" title="{s.i + 1} повтор из {s.n}">'
+            '<sup class="badge badge-secondary" style="font-size:10px;">'
+            f"{s.label} ({s.i + 1}/{s.n})"
+            "</sup>"
+            "</a>"
+        )
+        if s.i == 0:
+            return f'<span id="Label{s.label}">', f"</span>{label}"
+
+        return "", f"{label}"
+
+    if isinstance(s, style.FontColor):
+        return f'<span style="color: {s.color.value};">', "</span>"
+
     return "", ""
 
 
@@ -56,50 +72,11 @@ def is_paragraph_id(id):
     return id != "origin" and len(id.split("s")) == 1 and len(id.split("p")) == 2
 
 
-def assemble(
-    struct, styles, data, out_type="html", labels=None, mute=None, path=None, limit=None
-):
-    # print('LABELS:', labels)
-    checked_labels = dict()
-    if labels:
-        labels_counter = collections.Counter(labels.values())
-
+def assemble(struct, styles, data, out_type="html"):
     def html_compiler(node):
         """ """
-        mute_style = []
         if isinstance(node, str):
-            appendix = ""
-            if mute and labels:
-                label = labels[node[1:]]
-                sentence_id = "sentence:%s" % label
-                if label >= 0:
-                    n_entrie = checked_labels.get(label, 0)
-                    checked_labels[label] = n_entrie + 1
-                    appendix = (
-                        '<sup class="badge badge-secondary" style="font-size:8px;">'
-                        + str(labels[node[1:]])
-                        + ("(%s:%s)" % (str(n_entrie + 1), str(labels_counter[label])))
-                        + "</sup>"
-                    )
-                    if n_entrie > 20:
-                        return (
-                            wrapping([["a", {"href": "#%s" % sentence_id}]], "[...]")
-                            + appendix
-                        )
-
-                    elif n_entrie > 0:
-                        text = data[node[1:]][:limit] + "..."
-                        return (
-                            wrapping([["a", {"href": "#%s" % sentence_id}]], text)
-                            + appendix
-                        )
-
-                    else:
-                        mute_style.append(["div", {"id": sentence_id}])
-
-            return wrapping(
-                mute_style, correcting(styles.get(node, []), data[node[1:]]) + appendix
-            )
+            return correcting(styles.get(node, []), data[node[1:]])
 
         id, next_nodes = node
 
@@ -120,48 +97,28 @@ def assemble(
         if len(subnodes) == 1 and isinstance(leaf := subnodes[0], str):
             leaf_id = leaf[1:]
             indent = " "
-            end = ""
             prefix = ""
             sentence = data[leaf_id]
-            sentence_len = len(sentence)
-
-            if mute and labels is not None:
-                if labels and labels[leaf_id] >= 0:
-
-                    label = labels[leaf_id]
-                    n_entrie = checked_labels.get(label, 0)
-                    checked_labels[label] = n_entrie + 1
-                    n_labels = labels_counter[label]
-
-                    if n_entrie > 20:
-                        sentence = ""
-                        end = ""
-
-                    elif n_entrie > 0:
-                        if len(sentence) > limit:
-                            sentence = sentence[:limit] + "  <<<<<<<<"
-
-                        else:
-                            sentence = ""
-                            end = ""
-
-                    else:
-                        pass
-
-                    prefix = "[%s | %s:%s]" % (label, n_entrie + 1, n_labels)
-
-                elif sentence_len > 80:
-                    prefix = "[!]"
-
-                elif sentence_len < 2:
-                    sentence = ""
-                    end = ""
 
             for s in styles[node_id]:
                 if isinstance(s, style.ParagraphIndent):
                     indent = "\n" * s.width
 
-            return indent + prefix + sentence + end
+                if isinstance(s, style.Repetition):
+                    prefix = f"[{s.label} | {s.i + 1}/{s.n}]" + prefix
+
+                    if s.i > 0:
+                        limit = 80
+                        if len(sentence) > limit:
+                            sentence = sentence[:limit].rstrip() + "....."
+
+                if isinstance(s, style.Exclusive):
+                    prefix = "[!]" + prefix
+
+                if isinstance(s, style.Hide):
+                    sentence = ""
+
+            return f"{indent}{prefix}{sentence}"
 
         content = "".join(map(compile_txt, subnodes))
 
