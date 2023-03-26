@@ -65,6 +65,7 @@ class Repetition(Style):
 class Exclusive(Style):
     pass
 
+
 @dataclass(frozen=True)
 class FontColor(Style):
     color: str

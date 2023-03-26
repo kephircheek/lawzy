@@ -191,18 +191,14 @@ def stylize_duplicates(styles, labels, limit=None):
         label_occurrene = labels_occurrene[label]
         label_count = labels_counter[label]
         styles[sentence_id].append(
-            style.Repetition(
-                stylist, label=label, i=label_occurrene, n=label_count
-            )
+            style.Repetition(stylist, label=label, i=label_occurrene, n=label_count)
         )
 
         if label_occurrene >= limit:
             styles[sentence_id].append(style.Hide(stylist))
 
         elif label_occurrene > 0:
-            styles[sentence_id].append(
-                style.FontColor(stylist, style.Color.GRAY)
-            )
+            styles[sentence_id].append(style.FontColor(stylist, style.Color.GRAY))
 
         labels_occurrene[label] += 1
 
