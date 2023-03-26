@@ -203,12 +203,9 @@ def download():
     struct = Struct(token, document_id).get()
     styles = Style(token, document_id).get()
     data = Data(token, document_id).sentences
-    content = core.compiler.assemble(struct, styles, data, out_type="txt")
 
     path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/{document_id}/result.docx")
-    doc = docx.Document()
-    for par in content.split("\n\n"):
-        doc.add_paragraph(par)
+    doc = core.compiler.assemble(struct, styles, data, out_type="docx")
     doc.save(path)
 
     with open(f"{UPLOAD_FOLDER}/{token}/{document_id}/config.json") as f:
@@ -225,16 +222,16 @@ def download():
 def merge_and_download():
     token = session["token"]
     doc = docx.Document()
-    for document_id in document_ids(token):
-        doc.add_paragraph(document_name(token, document_id))
+    for document_id, name in sorted((id, document_name(token, id)) for id in document_ids(token)):
+        doc.add_paragraph(name)
 
         struct = Struct(token, document_id).get()
         styles = Style(token, document_id).get()
         data = Data(token, document_id).sentences
-        content = core.compiler.assemble(struct, styles, data, out_type="txt")
+        subdoc = core.compiler.assemble(struct, styles, data, out_type="docx")
 
-        for par in content.split("\n\n"):
-            doc.add_paragraph(par)
+        for par in subdoc.paragraphs:
+            doc.add_paragraph(par.text, par.style)
 
         doc.add_paragraph("=" * 70)
 

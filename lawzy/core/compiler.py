@@ -1,5 +1,8 @@
 import collections
 
+import docx
+from docx.enum.text import WD_COLOR_INDEX
+
 from . import style
 
 
@@ -141,3 +144,60 @@ def assemble(struct, styles, data, out_type="html"):
 
     if out_type == "txt":
         return compile_txt(struct)
+
+    if out_type == "docx":
+        return assemble_docx(struct, styles, data)
+
+
+def assemble_docx(struct, styles, data, parent=None):
+    node_id, subnodes = struct
+
+    if len(subnodes) == 1 and isinstance(leaf := subnodes[0], str):
+        leaf_id = leaf[1:]
+        parent.add_run(" ")
+        sentence = data[leaf_id]
+        for s in styles[node_id]:
+            if isinstance(s, style.Repetition):
+                parent.add_run(f"[{s.label} | {s.i + 1}/{s.n}]")
+
+            if isinstance(s, style.Exclusive):
+                parent.add_run("[!]")
+
+            if isinstance(s, style.Hide):
+                return parent
+
+        inplace_styles = [s for s in styles[leaf] if isinstance(s, style.InPlaceStyle)]
+        if len(inplace_styles) == 0:
+            parent.add_run(sentence)
+        else:
+            cursor = 0
+            for s in inplace_styles:
+                parent.add_run(sentence[cursor : s.start])
+                text = sentence[s.start : s.end]
+                r = parent.add_run(text)
+                if isinstance(s, style.Highlight):
+                    r.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+                cursor = s.end
+            parent.add_run(sentence[cursor:])
+        return parent
+
+    if is_paragraph_id(node_id):
+        for s in styles[node_id]:
+            if isinstance(s, style.Hide):
+                return parent
+
+            if isinstance(s, style.MarginTop):
+                for i in range(s.lines):
+                    parent.add_paragraph()
+
+        p = parent.add_paragraph()
+        for subnode in subnodes:
+            assemble_docx(subnode, styles, data, parent=p)
+        return parent
+
+    parent = parent or docx.Document()
+    for subnode in subnodes:
+        assemble_docx(subnode, styles, data, parent=parent)
+
+    return parent
