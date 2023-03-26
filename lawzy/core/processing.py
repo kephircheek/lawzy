@@ -25,7 +25,6 @@ class OrderedCounter(Counter, OrderedDict):
 
 
 def group(data, min_samples=3, eps=0.07):
-
     # data = {id:item if len(item) > 10 else '' for id, item in data.items()}
     def tokenizer(sentence):
         words = re.split(r"\W", sentence)

@@ -33,11 +33,11 @@ HIDE_PARS_WITHOUT_KEYWORDS = "hide_pars_without_keywords"
 # Define the blueprint: 'auth', set its url prefix: app.url/auth
 aggregator = Blueprint("aggregator", __name__, url_prefix="/aggregator")
 
+
 # Set the route and accepted methods
 @aggregator.route("/uploader", methods=["GET", "POST"])
 def upload_file():
     if request.method == "POST":
-
         token = uuid4()
         session["token"] = str(token)
         session["toggle:reduce"] = False
@@ -154,7 +154,6 @@ def reduce():
 
 @aggregator.route("/rating", methods=["GET"])
 def rating():
-
     token = session["token"]
     document_id = session["document_id"]
     path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/{document_id}/rating.txt")
