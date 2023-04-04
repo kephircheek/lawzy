@@ -6,6 +6,7 @@ from datetime import datetime
 from uuid import uuid4
 
 import docx
+import docxcompose.composer
 from flask import (
     Blueprint,
     redirect,
@@ -222,21 +223,21 @@ def download():
 def merge_and_download():
     token = session["token"]
     doc = docx.Document()
+    composer = docxcompose.composer.Composer(doc)
     for document_id, name in sorted((id, document_name(token, id)) for id in document_ids(token)):
-        doc.add_paragraph(name)
-
         struct = Struct(token, document_id).get()
         styles = Style(token, document_id).get()
         data = Data(token, document_id).sentences
         subdoc = core.compiler.assemble(struct, styles, data, out_type="docx")
-
-        for par in subdoc.paragraphs:
-            doc.add_paragraph(par.text, par.style)
-
-        doc.add_paragraph("=" * 70)
+        if len(subdoc.paragraphs) > 0:
+            subdoc.paragraphs[0].insert_paragraph_before(name)
+        else:
+            subdoc.add_paragraph(name)
+        subdoc.add_paragraph("=" * 70)
+        composer.append(subdoc)
 
     path = os.path.abspath(f"{UPLOAD_FOLDER}/{token}/merge_all.docx")
-    doc.save(path)
+    composer.save(path)
 
     return send_file(
         path,
