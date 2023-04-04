@@ -224,7 +224,9 @@ def merge_and_download():
     token = session["token"]
     doc = docx.Document()
     composer = docxcompose.composer.Composer(doc)
-    for document_id, name in sorted((id, document_name(token, id)) for id in document_ids(token)):
+    for document_id, name in sorted(
+        (id, document_name(token, id)) for id in document_ids(token)
+    ):
         struct = Struct(token, document_id).get()
         styles = Style(token, document_id).get()
         data = Data(token, document_id).sentences
