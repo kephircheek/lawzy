@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import Union
 
 
 class Stylist(Enum):
@@ -14,7 +15,7 @@ class Color(Enum):
 
 @dataclass(frozen=True)
 class Style:
-    stylist: Stylist | None
+    stylist: Union[Stylist, None]
 
 
 @dataclass(frozen=True)
