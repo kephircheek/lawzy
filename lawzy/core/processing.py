@@ -1,6 +1,7 @@
 import itertools
 import re
 from collections import Counter, OrderedDict
+from typing import Union, Dict, List, Tuple
 
 from sklearn.cluster import DBSCAN, OPTICS
 from sklearn.feature_extraction.text import TfidfVectorizer as tfv
@@ -102,7 +103,7 @@ def search(patterns, data) -> dict:
 
     united_pattern = "(" + "|".join(patterns) + ")"
 
-    entries = {pattern: [] for pattern in patterns}
+    entries: dict[str, list] = {pattern: [] for pattern in patterns}
     for id, sentence in data:
         for match in re.finditer(united_pattern, sentence.casefold()):
             tag, span = match.group(0), match.span()

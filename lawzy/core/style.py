@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union
+from typing import Union, Optional
 
 
 class Stylist(Enum):
@@ -51,7 +51,7 @@ class InPlaceStyle(Style):
 
 @dataclass(frozen=True)
 class Highlight(InPlaceStyle):
-    label: str = None
+    label: Optional[str] = None
     color: str = "#FF0000"
 
 
