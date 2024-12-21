@@ -69,25 +69,13 @@
   $ sudo systemctl enable lawzy
   ```
 
-6. Add key and bundle of certs
-   ([help](https://help.reg.ru/support/ssl-sertifikaty/3-etap-ustanovka-ssl-sertifikata/kak-nastroit-ssl-sertifikat-na-nginx))
-   for domain `www.lawzy.ru`
-  ```shell
-  $ sudo mkdir -p /etc/nginx/ssl/lawzy.ru
-  $ sudo cp <path/to/cert> /etc/nginx/ssl/lawzy.ru/lawzy.crt
-  $ sudo cp <path/to/key> /etc/nginx/ssl/lawzy.ru/lawzy.key
-  ```
-
-7. Serve uWSGI socket with nginx.
+6. Serve uWSGI socket with Nginx.
   ```shell
   $ sudo apt install nginx
   $ sudo tee /etc/nginx/sites-available/lawzy << EOF
   server {
       listen 443 ssl;
       server_name www.lawzy.ru lawzy.ru;
-      ssl_certificate /etc/nginx/ssl/lawzy.ru/lawzy.crt;
-      ssl_certificate_key /etc/nginx/ssl/lawzy.ru/lawzy.key;
-      
       location / {
           include uwsgi_params;
           uwsgi_pass unix:/home/lawzy/lawzy/lawzy.sock;
@@ -97,3 +85,34 @@
   $ sudo ls -s /etc/nginx/sites-available/lawzy  /etc/nginx/sites-enabled/
   $ sudo sudo systemctl restart nginx
   ```
+
+7. Install certificates
+
+  - By a Certbot [instruction](https://certbot.eff.org/instructions?ws=nginx&os=pip) 
+    ```shell
+    apt update
+    apt install -y python3 python3-venv libaugeas0
+    ```
+    ```shell
+    python3 -m venv /opt/certbot/
+    /opt/certbot/bin/pip install --upgrade pip
+    /opt/certbot/bin/pip install certbot certbot-nginx
+    ln -s /opt/certbot/bin/certbot /usr/bin/certbot
+    ```
+    ```
+    certbot --nginx -d lawzy.ru -d www.lawzy.ru
+    ```
+  
+  - Or add already existed key and bundle of certs
+    ([help](https://help.reg.ru/support/ssl-sertifikaty/3-etap-ustanovka-ssl-sertifikata/kak-nastroit-ssl-sertifikat-na-nginx))
+    for domain `www.lawzy.ru`
+    ```shell
+    $ sudo mkdir -p /etc/nginx/ssl/lawzy.ru
+    $ sudo cp <path/to/cert> /etc/nginx/ssl/lawzy.ru/lawzy.crt
+    $ sudo cp <path/to/key> /etc/nginx/ssl/lawzy.ru/lawzy.key
+    ```
+    Add path to cert in Nginx configuration in 'server' section after `server_name`.
+    ```
+    ssl_certificate /etc/nginx/ssl/lawzy.ru/lawzy.crt;
+    ssl_certificate_key /etc/nginx/ssl/lawzy.ru/lawzy.key;
+    ```
