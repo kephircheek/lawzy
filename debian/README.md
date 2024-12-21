@@ -84,7 +84,7 @@
   $ sudo tee /etc/nginx/sites-available/lawzy << EOF
   server {
       listen 443 ssl;
-      server_name www.lawzy.ru;
+      server_name www.lawzy.ru lawzy.ru;
       ssl_certificate /etc/nginx/ssl/lawzy.ru/lawzy.crt;
       ssl_certificate_key /etc/nginx/ssl/lawzy.ru/lawzy.key;
       
